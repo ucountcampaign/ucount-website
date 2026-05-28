@@ -174,20 +174,22 @@ const accentClass = (token: string) =>
         <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">DIRECTIONAL TEAM</h2>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {teamMembers.map((member) => (
-          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      <div class="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {teamMembers.map((member, index) => (
+          <div class="group bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md" data-team-card data-bio-open="false">
             <img src={member.headshot} alt={member.name} class="w-full h-72 object-cover object-top">
             <div class="p-6">
               <h3 class="font-display font-bold text-lg text-neutral-900">{member.name}</h3>
               <p class="text-ember-brand font-semibold text-sm mb-3">{member.role}</p>
-              <details class="group">
-                <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-500 hover:text-neutral-700 transition-colors">
-                  <span>Read bio</span>
-                  <svg class="chevron-icon w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </summary>
-                <p class="text-sm text-neutral-600 leading-relaxed mt-3">{member.longBio}</p>
-              </details>
+              <button type="button" class="bio-toggle flex cursor-pointer items-center gap-2 text-sm font-medium text-neutral-500 hover:text-neutral-700 transition-colors" aria-expanded="false" aria-controls={`team-bio-${index}`} data-bio-toggle>
+                <span>Read bio</span>
+                <svg class="w-4 h-4 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[bio-open=true]:rotate-180 motion-reduce:transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+              <div id={`team-bio-${index}`} class="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity] duration-[360ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[bio-open=true]:grid-rows-[1fr] group-data-[bio-open=true]:opacity-100 motion-reduce:transition-none" aria-hidden="true">
+                <div class="min-h-0 overflow-hidden">
+                  <p class="mt-3 -translate-y-1.5 text-sm leading-relaxed text-neutral-600 transition-transform duration-[360ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-data-[bio-open=true]:translate-y-0 motion-reduce:transition-none">{member.longBio}</p>
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -232,4 +234,26 @@ const accentClass = (token: string) =>
       </div>
     </div>
   </section>
+
+  <script>
+    document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
+      const button = toggle as HTMLButtonElement;
+      const card = button.closest("[data-team-card]");
+      const panelId = button.getAttribute("aria-controls");
+      const panel = panelId ? document.getElementById(panelId) : null;
+
+      if (!card || !panel) {
+        return;
+      }
+
+      button.addEventListener("click", () => {
+        const isOpen = button.getAttribute("aria-expanded") === "true";
+        const nextOpen = !isOpen;
+
+        button.setAttribute("aria-expanded", String(nextOpen));
+        card.setAttribute("data-bio-open", String(nextOpen));
+        panel.setAttribute("aria-hidden", String(!nextOpen));
+      });
+    });
+  </script>
 </BaseLayout>

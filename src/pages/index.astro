@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { getFeaturedStoreProducts } from "../lib/wix-store";
 import {
   cmsText,
   cmsValue,
@@ -24,6 +25,7 @@ const [
   regionAllocationsResult,
   homeInitiativesResult,
   partnersResult,
+  storeProductsResult,
 ] = await Promise.all([
   getSiteSettings(),
   getPageSection("home", "hero"),
@@ -36,6 +38,7 @@ const [
   getImpactAllocations("region"),
   getInitiatives("home"),
   getPartners(),
+  getFeaturedStoreProducts(6),
 ]);
 
 const site = resolveSiteSettings(siteSettings);
@@ -249,6 +252,7 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
 );
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
+const storeProducts = storeProductsResult.products;
 
 const donateCta = {
   title: cmsText(
@@ -1396,90 +1400,37 @@ const donateCta = {
           </h2>
           <p class="text-neutral-500 text-lg mt-3 max-w-lg">Every purchase supports women who are at-risk or survivors — strengthening dignity, community, and renewed hope for a brighter future.</p>
         </div>
-        <a href="#" class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
+        <a href={storeProductsResult.allProductsUrl} target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
           View All Products
           <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
       </div>
 
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/e3c070_f304da3f57ff4004a19183014b9795cb~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Crossbody Totes" class="w-full h-full object-cover">
+        {storeProducts.length ? (
+          storeProducts.map((product) => (
+            <a href={product.url} target="_blank" rel="noopener noreferrer" class="product-card group block no-underline">
+              <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+                <img src={product.image} alt={product.imageAlt} class="w-full h-full object-cover">
+              </div>
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">{product.name}</h3>
+                  {product.description && (
+                    <p class="text-sm text-neutral-500 mt-0.5">{product.description}</p>
+                  )}
+                </div>
+                {product.price && (
+                  <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">{product.price}</span>
+                )}
+              </div>
+            </a>
+          ))
+        ) : (
+          <div class="sm:col-span-2 lg:col-span-3 rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-10 text-center">
+            <p class="text-neutral-500">Marketplace products are unavailable right now.</p>
           </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Crossbody Totes</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Handcrafted with care and determination</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
-          </div>
-        </div>
-
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/73a2f6_8dc066159a7946289254a207948063b5~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Duster Kimonos" class="w-full h-full object-cover">
-          </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Duster Kimonos</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Thoughtfully patterned with hope</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
-          </div>
-        </div>
-
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/0a3442_75115e99e44e4de6959d955c666f4be2~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Beaded Wrap Bracelet" class="w-full h-full object-cover">
-          </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Beaded Wrap Bracelet</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Symbol of strength &amp; hope</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$25</span>
-          </div>
-        </div>
-
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/e3c070_6d54d531ecfe483f98d57d5338c42539~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Kantha Sari Quilt" class="w-full h-full object-cover">
-          </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Kantha Sari Quilt</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Persevering hands, kind craft</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$90</span>
-          </div>
-        </div>
-
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/73a2f6_ee6112118da14774b02d608280c502a4~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Block Print Journal" class="w-full h-full object-cover">
-          </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Block Print Journal</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Courageous creativity, bound with care</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$15</span>
-          </div>
-        </div>
-
-        <div class="product-card group cursor-pointer">
-          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-            <img src="https://static.wixstatic.com/media/73a2f6_19528a8559d04d7ea40c852122f8e165~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Scarf" class="w-full h-full object-cover">
-          </div>
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Scarf</h3>
-              <p class="text-sm text-neutral-500 mt-0.5">Handwoven with kindness</p>
-            </div>
-            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   </section>
