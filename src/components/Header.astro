@@ -1,0 +1,97 @@
+---
+import type { ResolvedSiteSettings } from "../lib/wix-cms";
+
+type ActivePage = "home" | "about" | "contact";
+
+const { site, activePage } = Astro.props as {
+  site: ResolvedSiteSettings;
+  activePage: ActivePage;
+};
+
+const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
+const navItems = [
+  { label: "Mission", href: homeHref("#mission") },
+  { label: "Impact", href: homeHref("#impact") },
+  { label: "Partners", href: homeHref("#partners") },
+  { label: "Shop", href: homeHref("#shop") },
+  { label: "About", href: "/about", page: "about" },
+  { label: "Contact", href: "/contact", page: "contact" },
+];
+
+const desktopClass = (page?: string) =>
+  [
+    "nav-link text-sm font-medium transition-colors",
+    page === activePage
+      ? "text-ember-brand hover:text-ember-700"
+      : "text-neutral-600 hover:text-neutral-900",
+  ].join(" ");
+
+const mobileClass = (page?: string) =>
+  [
+    "font-display font-semibold text-lg",
+    page === activePage ? "text-ember-brand" : "text-neutral-700",
+  ].join(" ");
+---
+
+<nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100">
+  <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 lg:h-20">
+      <a href="/" class="flex items-center group">
+        <img src="/assets/UCOUNT_logo_lockup_Black.png" alt="U COUNT Campaign" class="h-[4.5rem] lg:h-[5.5rem] w-auto">
+      </a>
+
+      <div class="hidden lg:flex items-center gap-8">
+        {navItems.map((item) => (
+          <a
+            href={item.href}
+            class={desktopClass(item.page)}
+            aria-current={item.page === activePage ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        ))}
+        <a href={site.primaryDonateUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-5 py-2.5 bg-ember-brand text-white font-display font-semibold text-sm rounded-full hover:bg-ember-500 transition-colors shadow-lg shadow-ember-brand/25">
+          Donate
+        </a>
+      </div>
+
+      <button data-mobile-menu-toggle class="lg:hidden flex flex-col gap-1.5 p-2" aria-controls="mobileMenu" aria-expanded="false">
+        <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
+        <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
+        <span class="w-4 h-0.5 bg-neutral-800 rounded"></span>
+      </button>
+    </div>
+  </div>
+
+  <div id="mobileMenu" class="mobile-menu fixed top-0 right-0 h-screen w-72 bg-white shadow-2xl z-50 p-8 lg:hidden">
+    <button data-mobile-menu-toggle class="absolute top-5 right-5 text-neutral-500 hover:text-neutral-900" aria-controls="mobileMenu" aria-expanded="false">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+    <div class="flex flex-col gap-6 mt-12">
+      {navItems.map((item) => (
+        <a
+          href={item.href}
+          class={mobileClass(item.page)}
+          aria-current={item.page === activePage ? "page" : undefined}
+        >
+          {item.label}
+        </a>
+      ))}
+      <a href={site.primaryDonateUrl} target="_blank" rel="noopener noreferrer" class="mt-4 text-center px-6 py-3 bg-ember-brand text-white font-display font-semibold rounded-full">Donate</a>
+    </div>
+  </div>
+</nav>
+
+<script>
+  const mobileMenu = document.getElementById("mobileMenu");
+  const toggles = document.querySelectorAll("[data-mobile-menu-toggle]");
+
+  toggles.forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const isOpen = mobileMenu?.classList.toggle("open") ?? false;
+      toggles.forEach((button) => {
+        button.setAttribute("aria-expanded", String(isOpen));
+      });
+    });
+  });
+</script>

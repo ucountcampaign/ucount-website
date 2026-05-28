@@ -1,0 +1,2152 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  cmsText,
+  cmsValue,
+  getImpactAllocations,
+  getImpactStats,
+  getInitiatives,
+  getPageSection,
+  getPartners,
+  getSiteSettings,
+  resolveSiteSettings,
+} from "../lib/wix-cms";
+
+const [
+  siteSettings,
+  heroContent,
+  missionContent,
+  impactContent,
+  donateContent,
+  heroStatsResult,
+  impactStatsResult,
+  initiativeAllocationsResult,
+  regionAllocationsResult,
+  homeInitiativesResult,
+  partnersResult,
+] = await Promise.all([
+  getSiteSettings(),
+  getPageSection("home", "hero"),
+  getPageSection("home", "mission-intro"),
+  getPageSection("home", "impact-intro"),
+  getPageSection("home", "donate-cta"),
+  getImpactStats("hero"),
+  getImpactStats("impact"),
+  getImpactAllocations("initiative"),
+  getImpactAllocations("region"),
+  getInitiatives("home"),
+  getPartners(),
+]);
+
+const site = resolveSiteSettings(siteSettings);
+
+const hero = {
+  eyebrow: cmsText(heroContent?.eyebrow, "Hope, courage, and justice since 2007"),
+  title: cmsText(heroContent?.title, "Every person has value. Every person counts."),
+  body: cmsText(
+    heroContent?.body,
+    "With hope, courage, and compassion, we fight trafficking through prevention, awareness, and restoration because every person carries dignity, and justice calls us to persevere.",
+  ),
+  primaryCtaLabel: cmsText(heroContent?.primaryCtaLabel, "Shop With Purpose"),
+  primaryCtaUrl: cmsText(heroContent?.primaryCtaUrl, "#shop"),
+  secondaryCtaLabel: cmsText(heroContent?.secondaryCtaLabel, "Donate Now"),
+  secondaryCtaUrl: cmsText(
+    heroContent?.secondaryCtaUrl,
+    "https://www.paypal.com/donate/?hosted_button_id=47BPT2WKXDFCN",
+  ),
+  image: cmsText(
+    heroContent?.image,
+    "https://static.wixstatic.com/media/5117f1_7aad5514ad5f47bd8f100fc9b21c13cb~mv2.jpeg/v1/fit/w_960,h_722,q_90/file.jpg",
+  ),
+  backgroundImage: cmsText(
+    heroContent?.backgroundImage,
+    "https://static.wixstatic.com/media/5117f1_83830d03ce464fa0bd4a61c37c37bb5c~mv2.jpeg/v1/fit/w_480,h_360,q_90/file.jpg",
+  ),
+};
+
+const useBrandedHeroTitle =
+  hero.title.toLowerCase() ===
+  "every person has value. every person counts.".toLowerCase();
+
+const missionIntro = {
+  eyebrow: cmsText(missionContent?.eyebrow, "Why We Fight"),
+  title: cmsText(missionContent?.title, "Human trafficking is modern-day slavery."),
+  body: cmsText(
+    missionContent?.body,
+    "When a person is forced, deceived, or coerced into being sold for sex, they become a victim. Nearly 28 million people are trafficked worldwide. Every statistic represents a person with dignity, strength, and the ability to persevere. We respond with compassion, collaborate with trusted partners, and keep our vision fixed on justice.",
+  ),
+};
+
+const missionTitleMatch = missionIntro.title.match(
+  /^(Human trafficking is )(modern-day slavery\.)$/i,
+);
+
+const defaultHeroStats = [
+  { label: "People enslaved", value: "49.6", suffix: "M", theme: "ember" },
+  { label: "Criminal industry", value: "236", suffix: "B", theme: "neutral" },
+  { label: "Victims are children", value: "1", suffix: " in 4", theme: "ember" },
+];
+
+const defaultImpactStats = [
+  {
+    label: "Caring support donated",
+    value: "175",
+    suffix: "K",
+    description: "Caring support donated to courageous frontline organizations worldwide.",
+    theme: "ember",
+  },
+  {
+    label: "Thoughtful purchases empowering survivors",
+    value: "75",
+    suffix: "K+",
+    description: "Thoughtful purchases empowering survivors with hope and dignity",
+    theme: "neutral",
+  },
+  {
+    label: "Motivated volunteers",
+    value: "100",
+    suffix: "+",
+    description: "Motivated volunteers persevering alongside communities",
+    theme: "ember",
+  },
+  {
+    label: "Regions reached",
+    value: "6",
+    suffix: "",
+    description: "Regions reached — USA, Europe, Southeast Asia, Latin America, Africa",
+    theme: "neutral",
+  },
+];
+
+const defaultInitiatives = [
+  {
+    slug: "prevention",
+    title: "Prevention",
+    shortDescription:
+      "Compassionate prevention — intelligence-led intervention before exploitation begins. We persevere to protect the vulnerable with wisdom and vision.",
+    accentToken: "ember-brand",
+  },
+  {
+    slug: "awareness",
+    title: "Awareness",
+    shortDescription:
+      "Courageous awareness — opening eyes and mobilizing communities through research, collaboration, and justice-minded action.",
+    accentToken: "gold-400",
+  },
+  {
+    slug: "restoration",
+    title: "Restoration",
+    shortDescription:
+      "Grace-filled restoration — safety, community, dignity, and economic opportunity so survivors can persevere and thrive.",
+    accentToken: "sky-400",
+  },
+];
+
+const defaultInitiativeAllocations = [
+  { label: "Restoration", percentage: 53, colorToken: "ember-brand" },
+  { label: "Prevention", percentage: 32, colorToken: "ember-700" },
+  { label: "Awareness", percentage: 15, colorToken: "gold-400" },
+];
+
+const defaultRegionAllocations = [
+  { label: "USA", percentage: 35, colorToken: "ember-brand" },
+  { label: "Global", percentage: 26, colorToken: "neutral-700" },
+  { label: "Europe", percentage: 17, colorToken: "neutral-700" },
+  { label: "SE Asia", percentage: 15, colorToken: "neutral-700" },
+  { label: "Latin America", percentage: 5, colorToken: "neutral-700" },
+  { label: "Africa", percentage: 2, colorToken: "neutral-700" },
+];
+
+const defaultPartners = [
+  {
+    slug: "justice-now",
+    name: "Justice Now",
+    logo: "/assets/partners/justice-now-noco-official.png",
+    tagline: "Education, care kits, and safe transportation for local victims.",
+    description:
+      "Local organization educating our community, providing care kits to victims, and facilitating safe transportation for those in need.",
+    websiteUrl: "https://www.justicenowco.org/",
+  },
+];
+
+const statNeedsDollar = (label: string) =>
+  /donated|purchase|industry/i.test(label);
+
+const formatStatValue = (stat: { label?: string | null; value?: string | number | null; suffix?: string | null }) => {
+  const label = cmsText(stat.label, "");
+  const suffix = typeof stat.suffix === "string" ? stat.suffix : "";
+  return `${statNeedsDollar(label) ? "$" : ""}${cmsValue(stat.value, "")}${suffix}`;
+};
+
+const heroStats = (heroStatsResult.length ? heroStatsResult : defaultHeroStats).map(
+  (stat) => ({
+    label: cmsText(stat.label, ""),
+    value: formatStatValue(stat),
+    theme: cmsText(stat.theme, "ember"),
+  }),
+);
+
+const homeInitiatives = (
+  homeInitiativesResult.length ? homeInitiativesResult : defaultInitiatives
+).map((initiative) => ({
+  title: cmsText(initiative.title, ""),
+  description: cmsText(initiative.shortDescription, ""),
+  accentToken: cmsText(initiative.accentToken, "ember-brand"),
+}));
+
+const impactIntro = {
+  eyebrow: cmsText(impactContent?.eyebrow, "Our Impact in 2025"),
+  title: cmsText(impactContent?.title, "Courageous impact. Dignity restored."),
+};
+
+const impactTitleParts = impactIntro.title.split(". ");
+const impactStats = (
+  impactStatsResult.length ? impactStatsResult : defaultImpactStats
+).map((stat) => ({
+  value: formatStatValue(stat),
+  description: cmsText(stat.description, cmsText(stat.label, "")),
+  theme: cmsText(stat.theme, "ember"),
+}));
+
+const initiativeAllocations = (
+  initiativeAllocationsResult.length
+    ? initiativeAllocationsResult
+    : defaultInitiativeAllocations
+).map((allocation) => ({
+  label: cmsText(allocation.label, ""),
+  percentage: cmsValue(allocation.percentage, "0"),
+  colorToken: cmsText(allocation.colorToken, "ember-brand"),
+}));
+
+const regionAllocations = (
+  regionAllocationsResult.length ? regionAllocationsResult : defaultRegionAllocations
+).map((allocation) => ({
+  label: cmsText(allocation.label, ""),
+  percentage: cmsValue(allocation.percentage, "0"),
+}));
+
+const colorClass = (token: string) =>
+  ({
+    "ember-brand": "bg-ember-brand text-ember-brand",
+    "ember-700": "bg-ember-700 text-ember-700",
+    "gold-400": "bg-gold-400 text-gold-400",
+    "sky-400": "bg-sky-400 text-sky-400",
+    "neutral-700": "bg-neutral-700 text-neutral-700",
+  })[token] ?? "bg-ember-brand text-ember-brand";
+
+const bgColorClass = (token: string) => colorClass(token).split(" ")[0];
+const textColorClass = (token: string) => colorClass(token).split(" ")[1];
+
+const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).map(
+  (partner) => ({
+    id: cmsText(partner.slug, cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-")),
+    name: cmsText(partner.name, "Partner"),
+    logo: cmsText(partner.logo, "/assets/partners/justice-now-noco-official.png"),
+    tagline: cmsText(partner.tagline, ""),
+    description: cmsText(partner.description, ""),
+    url: cmsText(partner.websiteUrl, "#"),
+  }),
+);
+
+const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
+
+const donateCta = {
+  title: cmsText(
+    donateContent?.title,
+    "Join us with hope and courage. Be part of the change.",
+  ),
+  body: cmsText(
+    donateContent?.body,
+    "Whether you donate, shop, volunteer, or pray, every act of compassion strengthens community, advances justice, and helps survivors persevere toward freedom.",
+  ),
+  primaryCtaLabel: cmsText(donateContent?.primaryCtaLabel, "Donate Now"),
+  primaryCtaUrl: cmsText(
+    donateContent?.primaryCtaUrl,
+    "https://www.paypal.com/donate/?hosted_button_id=47BPT2WKXDFCN",
+  ),
+  secondaryCtaLabel: cmsText(donateContent?.secondaryCtaLabel, "Shop the Marketplace"),
+  secondaryCtaUrl: cmsText(donateContent?.secondaryCtaUrl, "#shop"),
+};
+---
+<BaseLayout title="U COUNT — Fight Human Trafficking" site={site} activePage="home">
+  <Fragment slot="head">
+    <link rel="stylesheet" href="/assets/partners.css" />
+    <style is:global>
+    .fingerprint-mark {
+      filter: sepia(0) saturate(0) brightness(0.82);
+    }
+
+    @keyframes scroll-bob {
+      0%, 100% { transform: translateY(0); opacity: 0.7; }
+      50% { transform: translateY(6px); opacity: 1; }
+    }
+    .scroll-hint {
+      animation: scroll-bob 2s ease-in-out infinite;
+    }
+
+    .grain::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    @keyframes ember-glow {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    .ember-gradient {
+      background: linear-gradient(135deg, #572508 0%, #8C3D10 25%, #F38720 50%, #E67635 75%, #572508 100%);
+      background-size: 300% 300%;
+      animation: ember-glow 8s ease-in-out infinite;
+    }
+
+    @keyframes count-up {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stat-reveal {
+      animation: count-up 0.6s ease-out both;
+    }
+    .stat-reveal:nth-child(2) { animation-delay: 0.15s; }
+    .stat-reveal:nth-child(3) { animation-delay: 0.3s; }
+    .stat-reveal:nth-child(4) { animation-delay: 0.45s; }
+
+    .product-card {
+      overflow: hidden;
+      border: 1px solid rgba(207, 207, 207, 0.72);
+      border-radius: 1.25rem;
+      background: white;
+      box-shadow: 0 14px 32px rgba(34, 34, 34, 0.06);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+    }
+    .product-card > div:first-child {
+      margin-bottom: 0;
+      border-radius: 0;
+    }
+    .product-card > div:last-child {
+      min-height: 5.75rem;
+      padding: 1rem 1.1rem 1.1rem;
+      background: white;
+    }
+    .product-card img {
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px -12px rgba(87, 37, 8, 0.15);
+    }
+    .product-card:hover img {
+      transform: scale(1.035);
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .marquee-track {
+      animation: marquee 30s linear infinite;
+    }
+    .marquee-track:hover {
+      animation-play-state: paused;
+    }
+
+    .diagonal-top {
+      clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%);
+    }
+    @media (max-width: 768px) {
+      .diagonal-top {
+        clip-path: polygon(0 3%, 100% 0, 100% 100%, 0 100%);
+      }
+    }
+
+    .donut {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: conic-gradient(
+        #F38720 0% 53%,
+        #8C3D10 53% 85%,
+        #F7D070 85% 100%
+      );
+      position: relative;
+      flex-shrink: 0;
+    }
+    .donut::after {
+      content: '';
+      position: absolute;
+      inset: 22%;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .partner-switch {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      margin: 2rem auto 2.5rem;
+      max-width: 70rem;
+    }
+
+    .partner-switch-btn {
+      appearance: none;
+      border: 1px solid #d6d3d1;
+      background: rgba(255, 255, 255, 0.85);
+      color: #626262;
+      border-radius: 999px;
+      padding: 0.8rem 1rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1;
+      transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 24px rgba(34, 34, 34, 0.05);
+    }
+
+    .partner-switch-btn:hover,
+    .partner-switch-btn:focus-visible {
+      border-color: #F38720;
+      color: #8C3D10;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .partner-switch-btn.is-active {
+      background: #222222;
+      color: white;
+      border-color: #222222;
+      box-shadow: 0 16px 32px rgba(34, 34, 34, 0.18);
+    }
+
+    .partner-stage {
+      --partner-spotlight-min-height: 20rem;
+      position: relative;
+      min-height: 0;
+      overflow-anchor: none;
+    }
+
+    .partner-accordion-grid {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .partner-directory-button,
+    .partner-feature-card,
+    .partner-bento-card,
+    .partner-moving-card,
+    .partner-spotlight-panel {
+      border: 1px solid #d6d3d1;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 28px rgba(34, 34, 34, 0.06);
+    }
+
+    /* Stack: watermark layer is behind <details> (page bg → wm → white chrome) */
+    .partner-accordion-stack {
+      --partner-accordion-header-height: 6.1rem;
+      --partner-accordion-watermark-height: 9.5rem;
+      position: relative;
+      width: 100%;
+      align-self: start;
+      border-radius: 1.5rem;
+      overflow: hidden;
+    }
+
+    /* Reserve space below header only while watermark is shown (paired-column reveal) */
+    .partner-accordion-stack:has(.partner-accordion-wm--visible) {
+      min-height: calc(var(--partner-accordion-header-height) + var(--partner-accordion-watermark-height));
+    }
+
+    .partner-accordion-wm {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: var(--partner-accordion-header-height);
+      min-height: var(--partner-accordion-watermark-height);
+      z-index: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 1rem;
+      box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+    }
+
+    .partner-accordion-wm--visible {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.5s ease, visibility 0s linear 0s;
+    }
+
+    .partner-accordion-wm-img {
+      width: min(78%, 10.5rem);
+      height: auto;
+      max-height: calc(var(--partner-accordion-watermark-height) - 2rem);
+      object-fit: contain;
+      opacity: 0.16;
+    }
+
+    .partner-accordion-card {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .partner-accordion-summary {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem;
+      cursor: pointer;
+      background: #fff;
+      border: 1px solid #d6d3d1;
+      border-radius: 1.5rem 1.5rem 0 0;
+      box-shadow: 0 12px 28px rgba(34, 34, 34, 0.06);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .partner-accordion-card:not([open]) .partner-accordion-summary {
+      border-radius: 1.5rem;
+    }
+
+    .partner-accordion-card[open] .partner-accordion-summary {
+      border-bottom: none;
+      border-radius: 1.5rem 1.5rem 0 0;
+      box-shadow: none;
+    }
+
+    .partner-accordion-stack:hover .partner-accordion-summary {
+      border-color: #f2b179;
+    }
+
+    .partner-accordion-stack:hover .partner-accordion-card[open] .partner-body {
+      border-color: #f2b179;
+    }
+
+    .partner-accordion-stack:hover .partner-accordion-summary {
+      box-shadow: 0 18px 36px rgba(34, 34, 34, 0.08);
+    }
+
+    .partner-head {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .partner-title {
+      font-family: "Clash Display", system-ui, sans-serif;
+      font-size: 1.06rem;
+      font-weight: 700;
+      color: #222222;
+      line-height: 1.05;
+    }
+
+    .partner-copy {
+      color: #626262;
+      line-height: 1.7;
+      font-size: 0.98rem;
+    }
+
+    .partner-accordion-card .partner-body {
+      position: relative;
+      z-index: 1;
+      padding: 0 1.25rem 1.25rem;
+      background: #fff;
+      border: 1px solid #d6d3d1;
+      border-top: none;
+      border-radius: 0 0 1.5rem 1.5rem;
+      box-shadow: 0 12px 28px rgba(34, 34, 34, 0.06);
+    }
+
+    .partner-accordion-card[open] .partner-body {
+      box-shadow: 0 18px 36px rgba(34, 34, 34, 0.06);
+    }
+
+    .partner-logo-wrap {
+      width: 3.3rem;
+      height: 3.3rem;
+      border-radius: 1rem;
+      border: 1px solid #f0ede9;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .partner-logo-wrap--lg {
+      width: 4.75rem;
+      height: 4.75rem;
+      border-radius: 1.25rem;
+    }
+
+    .partner-logo {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+    }
+
+    .partner-logo--lg {
+      width: 82%;
+      height: 82%;
+    }
+
+    .partner-chevron {
+      width: 1.2rem;
+      height: 1.2rem;
+      color: #9E9E9E;
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .partner-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-top: 1.25rem;
+      padding: 0.78rem 1rem;
+      background: #F38720;
+      color: white;
+      text-decoration: none;
+      border-radius: 999px;
+      font-family: "Clash Display", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .partner-cta:hover {
+      background: #E67635;
+      transform: translateY(-1px);
+    }
+
+    .partner-cta svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .partner-bento-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .partner-bento-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 1.8rem;
+      padding: 1.35rem;
+      min-height: 14rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      background:
+        radial-gradient(circle at top right, rgba(243, 135, 32, 0.14), transparent 42%),
+        rgba(255, 255, 255, 0.94);
+    }
+
+    .partner-bento-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(140deg, rgba(255, 255, 255, 0.46), transparent 44%),
+        radial-gradient(circle at bottom left, rgba(243, 135, 32, 0.08), transparent 34%);
+      pointer-events: none;
+    }
+
+    .partner-bento-card__main {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .partner-bento-desc--clamp {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      line-clamp: 4;
+      overflow: hidden;
+    }
+
+    .partner-bento-card--hero {
+      min-height: 21rem;
+      padding: 1.55rem;
+      background:
+        linear-gradient(145deg, rgba(243, 135, 32, 0.18), rgba(255, 255, 255, 0.98) 40%),
+        white;
+    }
+
+    .partner-bento-card--hero .partner-title {
+      font-size: clamp(1.55rem, 2vw, 2.1rem);
+      line-height: 0.98;
+    }
+
+    .partner-bento-card--hero .partner-bento-lead {
+      font-size: 1.02rem;
+      max-width: 36rem;
+    }
+
+    .partner-bento-card--hero .partner-copy {
+      max-width: 42rem;
+      font-size: 1.02rem;
+    }
+
+    .partner-bento-card--side {
+      min-height: 10.75rem;
+    }
+
+    .partner-bento-card--standard {
+      min-height: 15rem;
+    }
+
+    .partner-bento-card--tall {
+      min-height: 19rem;
+    }
+
+    .partner-bento-card--wide {
+      min-height: 13rem;
+    }
+
+    .partner-bento-card--compact {
+      min-height: 13rem;
+    }
+
+    .partner-bento-foot {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      padding-top: 0.25rem;
+      margin-top: auto;
+    }
+
+    .partner-bento-card--hero .partner-bento-foot {
+      justify-content: flex-end;
+      align-items: end;
+      gap: 1rem;
+    }
+
+    .partner-bento-card .partner-head {
+      align-items: flex-start;
+    }
+
+    .partner-bento-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #8C3D10;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .partner-bento-open:hover {
+      color: #F38720;
+    }
+
+    .partner-bento-open svg {
+      width: 0.8125rem;
+      height: 0.8125rem;
+      flex-shrink: 0;
+    }
+
+    .partner-bento-card:hover {
+      transform: translateY(-3px);
+      border-color: #f2b179;
+      box-shadow: 0 20px 40px rgba(34, 34, 34, 0.08);
+    }
+
+    .partner-bento-lead {
+      color: #515151;
+      line-height: 1.5;
+      margin-top: 0.65rem;
+      font-size: 0.94rem;
+      font-weight: 500;
+    }
+
+    .partner-bento-card--side .partner-bento-lead,
+    .partner-bento-card--compact .partner-bento-lead {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+    }
+
+    .partner-bento-card--wide .partner-bento-lead {
+      max-width: 38rem;
+    }
+
+    .partner-bento-card--side .partner-copy {
+      display: none;
+    }
+
+    .partner-bento-card--compact .partner-copy {
+      display: none;
+    }
+
+    .partner-bento-card--wide .partner-copy {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+    }
+
+    .partner-link-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+      color: #8C3D10;
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .partner-link-inline:hover {
+      color: #F38720;
+    }
+
+    .partner-marquee-shell {
+      position: relative;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+      mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+    }
+
+    .partner-marquee-row {
+      display: flex;
+      width: max-content;
+      gap: 1rem;
+      padding: 0.35rem 0;
+      animation: partner-marquee 44s linear infinite;
+    }
+
+    .partner-marquee-row--reverse {
+      animation-direction: reverse;
+      animation-duration: 52s;
+    }
+
+    .partner-marquee-shell:not(.partner-pills-shell):hover .partner-marquee-row {
+      animation-play-state: paused;
+    }
+
+    /* Pills + spotlight: same infinite marquee as CSS (WAAPI); drag scrubs animation time */
+    .partner-pills-shell.partner-marquee-shell {
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .partner-pills-shell--grabbing {
+      cursor: grabbing;
+      user-select: none;
+    }
+
+    .partner-pills-shell--grabbing .partner-pill-button {
+      pointer-events: none;
+    }
+
+    .partner-pills-row {
+      display: flex;
+      width: max-content;
+      gap: 1rem;
+      padding: 0.35rem 0;
+      will-change: transform;
+    }
+
+    @keyframes partner-marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .partner-moving-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      width: 20rem;
+      min-height: 0;
+      padding: 1.2rem;
+      border-radius: 1.6rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 247, 241, 0.95));
+    }
+
+    .partner-moving-card:hover {
+      transform: translateY(-3px);
+      border-color: #f2b179;
+    }
+
+    .partner-moving-card .partner-copy {
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+
+    .partner-moving-card__foot {
+      margin-top: auto;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(230, 225, 220, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #AB4E19;
+    }
+
+    .partner-moving-card__foot svg {
+      width: 0.75rem;
+      height: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    @keyframes partner-spotlight-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes partner-spotlight-out {
+      from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.98);
+      }
+    }
+
+    .partner-spotlight-panel[data-animate="true"] {
+      animation: partner-spotlight-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .partner-spotlight-panel[data-animate-out="true"] {
+      animation: partner-spotlight-out 0.2s ease-in both;
+    }
+
+    .partner-pill-button {
+      appearance: none;
+      border: 1px solid #d6d3d1;
+      background: rgba(255, 255, 255, 0.92);
+      color: #515151;
+      border-radius: 999px;
+      padding: 0.7rem 1rem 0.7rem 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: "Clash Display", system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 0.98rem;
+      line-height: 1;
+      box-shadow: 0 10px 22px rgba(34, 34, 34, 0.05);
+      transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .partner-pill-button:hover,
+    .partner-pill-button:focus-visible,
+    .partner-pill-button.is-active {
+      border-color: #F38720;
+      color: #8C3D10;
+      background: white;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .partner-pill-button .partner-logo-wrap {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 999px;
+    }
+
+    .partner-spotlight-panel {
+      margin-top: 1.5rem;
+      min-height: var(--partner-spotlight-min-height);
+      padding: 1.4rem;
+      border-radius: 1.8rem;
+      background:
+        radial-gradient(circle at top right, rgba(243, 135, 32, 0.16), transparent 34%),
+        rgba(255, 255, 255, 0.95);
+      transition: min-height 0.2s ease;
+    }
+
+    .partner-spotlight-measure {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .partner-spotlight-measure .partner-spotlight-panel {
+      min-height: auto;
+    }
+
+    .partner-spotlight-meta {
+      font-size: 0.74rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #AB4E19;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .partner-spotlight-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.2rem;
+      align-items: center;
+    }
+
+    .partner-spotlight-tagline {
+      color: #7E7E7E;
+      font-size: 0.96rem;
+      margin-top: 0.35rem;
+      line-height: 1.55;
+    }
+
+    .partner-directory {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+      margin-bottom: 1.5rem;
+    }
+
+    .partner-directory-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.85rem;
+    }
+
+    .partner-directory-button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      padding: 0.95rem 1rem;
+      border-radius: 1.4rem;
+      text-align: left;
+      transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+      cursor: pointer;
+    }
+
+    .partner-directory-button:hover,
+    .partner-directory-button:focus-visible,
+    .partner-directory-button.is-active {
+      border-color: #F38720;
+      background: white;
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .partner-directory-button small {
+      display: block;
+      color: #9E9E9E;
+      font-size: 0.8rem;
+      margin-top: 0.2rem;
+    }
+
+    .partner-directory-feature {
+      width: 100%;
+    }
+
+    .partner-feature-card {
+      border-radius: 1.9rem;
+      padding: 1.5rem 1.5rem 1.75rem;
+      background:
+        radial-gradient(circle at top right, rgba(243, 135, 32, 0.18), transparent 38%),
+        rgba(255, 255, 255, 0.96);
+    }
+
+    .partner-feature-card .partner-cta {
+      margin-top: 1.35rem;
+      margin-bottom: 0;
+    }
+
+    .partner-feature-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (min-width: 768px) {
+      .partner-accordion-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .partner-bento-grid {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        grid-auto-flow: dense;
+        grid-auto-rows: minmax(5.25rem, auto);
+      }
+
+      .partner-bento-card--hero,
+      .partner-bento-card--wide {
+        grid-column: span 6;
+      }
+
+      .partner-bento-card--hero {
+        grid-row: span 2;
+      }
+
+      .partner-bento-card--side,
+      .partner-bento-card--standard,
+      .partner-bento-card--tall,
+      .partner-bento-card--compact {
+        grid-column: span 3;
+      }
+
+      .partner-bento-card--tall {
+        grid-row: span 2;
+      }
+
+      .partner-spotlight-layout {
+        grid-template-columns: 1.15fr 1.85fr;
+      }
+
+      .partner-directory-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .partner-feature-grid {
+        grid-template-columns: auto 1fr;
+      }
+    }
+
+    @media (min-width: 1100px) {
+      .partner-bento-grid {
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+      }
+
+      .partner-bento-card--hero {
+        grid-column: span 7;
+        grid-row: span 2;
+      }
+
+      .partner-bento-card--side {
+        grid-column: span 5;
+      }
+
+      .partner-bento-card--standard,
+      .partner-bento-card--tall,
+      .partner-bento-card--compact {
+        grid-column: span 4;
+      }
+
+      .partner-bento-card--wide {
+        grid-column: span 8;
+      }
+
+      .partner-directory-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+  </style>
+  </Fragment>
+
+  <section class="relative min-h-screen flex items-center pt-20 grain">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute -top-40 -right-40 w-[600px] h-[600px] bg-ember-50 rounded-full blur-3xl opacity-60"></div>
+      <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gold-50 rounded-full blur-3xl opacity-40"></div>
+      <img
+        src="/assets/fingerprint.svg"
+        alt=""
+        aria-hidden="true"
+        class="fingerprint-mark pointer-events-none absolute right-[-5.5rem] top-[31%] w-[210px] opacity-[0.022] sm:right-[-4.5rem] sm:top-[30%] sm:w-[240px] md:right-[-3.75rem] md:w-[280px] lg:hidden"
+      >
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-0">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-ember-50 rounded-full mb-8 fade-up">
+          <span class="w-2 h-2 bg-ember-brand rounded-full animate-pulse"></span>
+          <span class="text-xs font-semibold uppercase tracking-widest text-ember-700">{hero.eyebrow}</span>
+        </div>
+
+        <h1 class="font-display font-bold text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-neutral-900 leading-[0.95] tracking-tight mb-6 fade-up" style="animation-delay: 0.1s;">
+          {useBrandedHeroTitle ? (
+            <>
+              Every person<br/>
+              <span class="text-ember-brand">has value.</span><br/>
+              <span class="text-neutral-400">Every person</span><br/>
+              <span class="text-ember-brand">counts.</span>
+            </>
+          ) : (
+            hero.title
+          )}
+        </h1>
+
+        <p class="text-lg lg:text-xl text-neutral-600 max-w-lg mb-10 leading-relaxed fade-up" style="animation-delay: 0.25s;">
+          {hero.body}
+        </p>
+
+        <div class="flex flex-wrap gap-4 fade-up" style="animation-delay: 0.4s;">
+          <a href={hero.primaryCtaUrl} class="group inline-flex items-center gap-2 px-8 py-4 bg-neutral-900 text-white font-display font-semibold text-base rounded-full hover:bg-neutral-800 transition-all shadow-xl shadow-neutral-900/20">
+            {hero.primaryCtaLabel}
+            <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+          <a href={hero.secondaryCtaUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-8 py-4 border-2 border-ember-brand text-ember-700 font-display font-semibold text-base rounded-full hover:bg-ember-50 transition-all">
+            {hero.secondaryCtaLabel}
+          </a>
+        </div>
+
+        <div class="flex flex-wrap gap-8 lg:gap-12 mt-16 pt-8 border-t border-neutral-200 fade-up" style="animation-delay: 0.55s;">
+          {heroStats.map((stat) => (
+            <div>
+              <span class={`font-display font-bold text-3xl lg:text-4xl ${stat.theme === "neutral" ? "text-neutral-900" : "text-ember-brand"}`}>{stat.value}</span>
+              <p class="text-xs uppercase tracking-wider text-neutral-500 mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div class="hidden lg:block">
+        <div class="relative">
+          <img
+            src="/assets/fingerprint.svg"
+            alt=""
+            aria-hidden="true"
+            class="fingerprint-mark pointer-events-none absolute -right-[35%] top-[80%] z-0 w-[360px] -translate-y-1/2 opacity-[0.06] xl:w-[420px]"
+          >
+          <div class="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-ember-brand/10 rotate-1 hover:rotate-0 transition-transform duration-500">
+            <img src={hero.image} alt="U COUNT Campaign - Fighting Human Trafficking" class="w-full h-auto">
+          </div>
+          <div class="absolute -bottom-4 -left-4 z-20 rounded-xl overflow-hidden shadow-xl w-48 border-4 border-white -rotate-3">
+            <img src={hero.backgroundImage} alt="Marketplace products" class="w-full h-auto">
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <div class="absolute bottom-4 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 sm:gap-2 text-neutral-400 scroll-hint">
+      <span class="text-[9px] sm:text-[10px] uppercase tracking-[0.3em]">Scroll</span>
+      <div class="w-px h-6 sm:h-8 bg-gradient-to-b from-neutral-300 to-transparent"></div>
+    </div>
+  </section>
+
+  <section id="mission" class="relative text-white diagonal-top -mt-8" style="background-color: #454545;">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute top-20 right-20 w-[300px] h-[300px] bg-ember-brand/15 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-24 lg:py-32 pt-32 lg:pt-40">
+      <div class="flex items-center gap-3 mb-12">
+        <div class="w-12 h-px bg-ember-brand"></div>
+        <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-300">{missionIntro.eyebrow}</span>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-12 lg:gap-20">
+        <div>
+          <h2 class="font-display font-bold text-4xl lg:text-5xl leading-tight mb-6">
+            {missionTitleMatch ? (
+              <>
+                {missionTitleMatch[1]}<span class="text-ember-brand">{missionTitleMatch[2]}</span>
+              </>
+            ) : (
+              missionIntro.title
+            )}
+          </h2>
+          <p class="text-neutral-400 text-lg leading-relaxed mb-6">
+            {missionIntro.body}
+          </p>
+          <p class="font-display font-semibold text-xl text-ember-300 italic">
+            They are why we fight — with hope, courage, compassion, and grace.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-6">
+          {homeInitiatives.map((initiative) => (
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-ember-brand/30 transition-colors">
+              <div class="flex items-center gap-4 mb-3">
+                <div class={`w-10 h-10 rounded-xl ${bgColorClass(initiative.accentToken)}/20 flex items-center justify-center`}>
+                  <svg class={`w-5 h-5 ${textColorClass(initiative.accentToken)}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/></svg>
+                </div>
+                <h3 class="font-display font-bold text-lg">{initiative.title}</h3>
+              </div>
+              <p class="text-neutral-400 text-sm leading-relaxed">{initiative.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="impact" class="relative bg-neutral-50 py-24 lg:py-32">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-px bg-ember-brand"></div>
+        <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">{impactIntro.eyebrow}</span>
+      </div>
+      <h2 class="font-display font-bold text-4xl lg:text-5xl text-neutral-900 mb-16">
+        {impactTitleParts[0]}. <span class="text-ember-brand">{impactTitleParts.slice(1).join(". ")}</span>
+      </h2>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        {impactStats.map((stat) => (
+          <div class="stat-reveal bg-white rounded-2xl p-8 shadow-sm border border-neutral-100 hover:shadow-md transition-shadow">
+            <span class={`font-display font-bold text-5xl ${stat.theme === "neutral" ? "text-neutral-900" : "text-ember-brand"}`}>{stat.value}</span>
+            <p class="text-neutral-600 mt-2 font-medium">{stat.description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div class="bg-white rounded-2xl p-8 border border-neutral-100">
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Spend by Initiative</h3>
+          <div class="flex flex-col sm:flex-row items-center gap-8">
+            <div class="donut"></div>
+            <div class="space-y-4">
+              {initiativeAllocations.map((allocation) => (
+                <div class="flex items-center gap-3">
+                  <div class={`w-4 h-4 rounded-full ${bgColorClass(allocation.colorToken)} flex-shrink-0`}></div>
+                  <div>
+                    <span class="text-sm font-bold text-neutral-900">{allocation.percentage}%</span>
+                    <span class="text-sm text-neutral-600 ml-1">{allocation.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-8 border border-neutral-100">
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Where We Invest</h3>
+          <div class="grid grid-cols-3 gap-4">
+            {regionAllocations.map((allocation, index) => (
+              <div class={`text-center p-4 rounded-xl ${index === 0 ? "bg-ember-50/50" : "bg-neutral-50"}`}>
+                <span class={`font-display font-bold text-2xl ${index === 0 ? "text-ember-brand" : "text-neutral-800"}`}>{allocation.percentage}%</span>
+                <p class="text-xs text-neutral-600 mt-1 font-medium">{allocation.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PARTNERS SECTION -->
+  <section id="partners" class="relative pt-20 pb-24 lg:pt-28 lg:pb-36 bg-ember-50/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="text-center mb-14">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">Our Partners</span>
+          <div class="w-12 h-px bg-ember-brand"></div>
+        </div>
+        <h2 class="font-display font-bold text-3xl lg:text-4xl text-neutral-900 mb-3">Courageous partners we stand with.</h2>
+        <p class="text-neutral-500 max-w-2xl mx-auto">We collaborate with partners whose courage, compassion, and vision we have personally witnessed.</p>
+      </div>
+
+      <div id="partnerStage" class="partner-stage"></div>
+    </div>
+  </section>
+
+  <!-- SHOP SECTION (moved below Partners per feedback) -->
+  <section id="shop" class="relative py-24 lg:py-32 bg-white">
+    <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-14">
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-px bg-ember-brand"></div>
+            <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">Marketplace</span>
+          </div>
+          <h2 class="font-display font-bold text-4xl lg:text-5xl text-neutral-900">
+            Shop with <span class="text-ember-brand">purpose.</span>
+          </h2>
+          <p class="text-neutral-500 text-lg mt-3 max-w-lg">Every purchase supports women who are at-risk or survivors — strengthening dignity, community, and renewed hope for a brighter future.</p>
+        </div>
+        <a href="#" class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
+          View All Products
+          <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/e3c070_f304da3f57ff4004a19183014b9795cb~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Crossbody Totes" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Crossbody Totes</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Handcrafted with care and determination</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
+          </div>
+        </div>
+
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/73a2f6_8dc066159a7946289254a207948063b5~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Duster Kimonos" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Duster Kimonos</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Thoughtfully patterned with hope</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
+          </div>
+        </div>
+
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/0a3442_75115e99e44e4de6959d955c666f4be2~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Beaded Wrap Bracelet" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Beaded Wrap Bracelet</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Symbol of strength &amp; hope</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$25</span>
+          </div>
+        </div>
+
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/e3c070_6d54d531ecfe483f98d57d5338c42539~mv2.png/v1/fit/w_500,h_500,q_90/file.png" alt="Kantha Sari Quilt" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Kantha Sari Quilt</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Persevering hands, kind craft</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$90</span>
+          </div>
+        </div>
+
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/73a2f6_ee6112118da14774b02d608280c502a4~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Block Print Journal" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Block Print Journal</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Courageous creativity, bound with care</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$15</span>
+          </div>
+        </div>
+
+        <div class="product-card group cursor-pointer">
+          <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+            <img src="https://static.wixstatic.com/media/73a2f6_19528a8559d04d7ea40c852122f8e165~mv2.jpg/v1/fit/w_500,h_500,q_90/file.jpg" alt="Scarf" class="w-full h-full object-cover">
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h3 class="font-display font-semibold text-base text-neutral-900 group-hover:text-ember-brand transition-colors">Scarf</h3>
+              <p class="text-sm text-neutral-500 mt-0.5">Handwoven with kindness</p>
+            </div>
+            <span class="font-display font-bold text-lg text-ember-brand whitespace-nowrap">$35</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="donate" class="relative ember-gradient grain overflow-hidden">
+    <div class="absolute inset-0">
+      <img
+        src="/assets/fingerprint.svg"
+        alt=""
+        aria-hidden="true"
+        class="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[500px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[0.08] lg:w-[560px]"
+        style="filter: brightness(0) invert(1);"
+      >
+    </div>
+
+    <div class="relative z-10 max-w-4xl mx-auto px-6 lg:px-8 py-24 lg:py-32 text-center">
+      <h2 class="font-display font-bold text-4xl lg:text-6xl text-white leading-tight mb-6">
+        {donateCta.title}
+      </h2>
+      <p class="text-white/80 text-lg lg:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+        {donateCta.body}
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href={donateCta.primaryCtaUrl} target="_blank" rel="noopener noreferrer" class="px-8 py-4 bg-white text-ember-800 font-display font-bold text-base rounded-full hover:bg-neutral-50 transition-colors shadow-xl shadow-black/10">
+          {donateCta.primaryCtaLabel}
+        </a>
+        <a href={donateCta.secondaryCtaUrl} class="px-8 py-4 bg-white/10 text-white font-display font-bold text-base rounded-full border-2 border-white/30 hover:bg-white/20 transition-colors backdrop-blur">
+          {donateCta.secondaryCtaLabel}
+        </a>
+        <a href="/about" class="px-8 py-4 bg-white/10 text-white font-display font-bold text-base rounded-full border-2 border-white/30 hover:bg-white/20 transition-colors backdrop-blur">
+          Learn More
+        </a>
+        <a href="/contact" class="px-8 py-4 bg-white/10 text-white font-display font-bold text-base rounded-full border-2 border-white/30 hover:bg-white/20 transition-colors backdrop-blur">
+          Volunteer
+        </a>
+      </div>
+    </div>
+  </section>
+
+<script type="application/json" id="partners-data" set:html={partnersJson}></script>
+  <script is:inline>
+    const PARTNERS = JSON.parse(document.getElementById("partners-data")?.textContent || "[]");
+
+    const PARTNER_VARIANTS = [
+      { id: "accordion", label: "Accordion" },
+      { id: "bento", label: "Bento" },
+      { id: "moving-cards", label: "Moving Cards" },
+      { id: "pills-spotlight", label: "Pills + Spotlight" },
+      { id: "directory", label: "Directory Spotlight" },
+    ];
+
+    const partnerStage = document.getElementById("partnerStage");
+    const partnerSwitch = document.getElementById("partnerSwitch");
+    let activeVariant = "pills-spotlight";
+    let activePartnerId = PARTNERS[0].id;
+
+    function partnerById(id) {
+      return PARTNERS.find((partner) => partner.id === id) || PARTNERS[0];
+    }
+
+    function externalIcon() {
+      return `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      `;
+    }
+
+    function externalIconSmall() {
+      return `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
+        </svg>
+      `;
+    }
+
+    function chevronIcon() {
+      return `
+        <svg class="partner-chevron chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      `;
+    }
+
+    function logoMarkup(partner, size = "md") {
+      const wrapperClass = size === "lg" ? "partner-logo-wrap partner-logo-wrap--lg" : "partner-logo-wrap";
+      const imageClass = size === "lg" ? "partner-logo partner-logo--lg" : "partner-logo";
+      return `
+        <div class="${wrapperClass}">
+          <img src="${partner.logo}" alt="${partner.name}" class="${imageClass}">
+        </div>
+      `;
+    }
+
+    function ctaMarkup(partner) {
+      return `
+        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-cta">
+          Visit Partner
+          ${externalIcon()}
+        </a>
+      `;
+    }
+
+    function spotlightContent(partner, metaLabel, animate) {
+      return `
+        <div class="partner-spotlight-panel"${animate ? ' data-animate="true"' : ""}>
+          <div class="partner-spotlight-meta">${metaLabel}</div>
+          <div class="partner-spotlight-layout">
+            ${logoMarkup(partner, "lg")}
+            <div>
+              <h3 class="partner-title">${partner.name}</h3>
+              <p class="partner-spotlight-tagline">${partner.tagline}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              ${ctaMarkup(partner)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSwitch() {
+      if (!partnerSwitch) {
+        return;
+      }
+
+      partnerSwitch.innerHTML = PARTNER_VARIANTS.map((variant) => `
+        <button
+          type="button"
+          class="partner-switch-btn${variant.id === activeVariant ? " is-active" : ""}"
+          data-variant="${variant.id}"
+          aria-pressed="${variant.id === activeVariant ? "true" : "false"}"
+        >
+          ${variant.label}
+        </button>
+      `).join("");
+    }
+
+    function applyAccordionWatermarks() {
+      partnerStage.querySelectorAll(".partner-accordion-wm-img").forEach((img, index) => {
+        const href = PARTNERS[index]?.logo;
+        if (href) {
+          img.src = href;
+        }
+      });
+    }
+
+    function syncAccordionWatermarkVisibility() {
+      if (activeVariant !== "accordion") {
+        return;
+      }
+      const stacks = partnerStage.querySelectorAll(".partner-accordion-stack");
+      if (!stacks.length) {
+        return;
+      }
+      const twoCol = window.matchMedia("(min-width: 768px)").matches;
+      stacks.forEach((stack, index) => {
+        const wm = stack.querySelector(".partner-accordion-wm");
+        const details = stack.querySelector("details.partner-accordion-card");
+        if (!wm || !details) {
+          return;
+        }
+        let show = false;
+        if (twoCol) {
+          const neighborIndex = index % 2 === 0 ? index + 1 : index - 1;
+          const neighborStack = stacks[neighborIndex];
+          const neighborDetails = neighborStack?.querySelector("details.partner-accordion-card");
+          if (neighborDetails) {
+            const neighborOpen = neighborDetails.hasAttribute("open");
+            const selfOpen = details.hasAttribute("open");
+            show = neighborOpen && !selfOpen;
+          }
+        }
+        wm.classList.toggle("partner-accordion-wm--visible", show);
+        wm.setAttribute("aria-hidden", show ? "false" : "true");
+      });
+    }
+
+    function renderAccordion() {
+      partnerStage.innerHTML = `
+        <div class="partner-accordion-grid">
+          ${PARTNERS.map((partner, index) => `
+            <div class="partner-accordion-stack">
+              <div class="partner-accordion-wm" aria-hidden="true">
+                <img class="partner-accordion-wm-img" alt="" decoding="async" loading="lazy" />
+              </div>
+              <details class="partner-accordion-card">
+                <summary class="partner-accordion-summary">
+                  <div class="partner-head">
+                    ${logoMarkup(partner)}
+                    <h3 class="partner-title">${partner.name}</h3>
+                  </div>
+                  ${chevronIcon()}
+                </summary>
+                <div class="partner-body">
+                  <p class="partner-copy">${partner.description}</p>
+                  ${ctaMarkup(partner)}
+                </div>
+              </details>
+            </div>
+          `).join("")}
+        </div>
+      `;
+      applyAccordionWatermarks();
+      syncAccordionWatermarkVisibility();
+      requestAnimationFrame(() => {
+        syncAccordionWatermarkVisibility();
+      });
+      partnerStage.querySelectorAll("details.partner-accordion-card").forEach((detailsEl) => {
+        detailsEl.addEventListener("toggle", syncAccordionWatermarkVisibility);
+      });
+    }
+
+    function renderBento() {
+      const layoutByIndex = [
+        { kind: "hero" },
+        { kind: "side" },
+        { kind: "side" },
+        { kind: "standard" },
+        { kind: "standard" },
+        { kind: "tall" },
+        { kind: "compact" },
+        { kind: "compact" },
+        { kind: "wide" },
+        { kind: "compact" },
+      ];
+
+      const cards = PARTNERS.map((partner, index) => {
+        const config = layoutByIndex[index] || { kind: "standard" };
+        const className = `partner-bento-card partner-bento-card--${config.kind}`;
+        const useLargeLogo = config.kind === "hero";
+        const shouldClamp = config.kind === "standard" || config.kind === "tall" || config.kind === "wide";
+        const descClass = shouldClamp ? "partner-copy partner-bento-desc--clamp" : "partner-copy";
+        const spacing = config.kind === "hero" ? "0.85rem" : "0.65rem";
+
+        return `
+          <article class="${className}">
+            <div class="partner-bento-card__main">
+              <div class="partner-head">
+                ${logoMarkup(partner, useLargeLogo ? "lg" : "md")}
+                <div>
+                  <h3 class="partner-title">${partner.name}</h3>
+                  <p class="partner-bento-lead">${partner.tagline}</p>
+                </div>
+              </div>
+              <p class="${descClass}" style="margin-top:${spacing};">${partner.description}</p>
+            </div>
+            <div class="partner-bento-foot">
+              <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
+                Visit site
+                ${externalIconSmall()}
+              </a>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      partnerStage.innerHTML = `
+        <div class="partner-bento-grid">
+          ${cards}
+        </div>
+      `;
+    }
+
+    function movingCardsMarkup(reverse = false) {
+      const row = PARTNERS.concat(PARTNERS).map((partner) => `
+        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
+          <div class="partner-head">
+            ${logoMarkup(partner)}
+            <div>
+              <h3 class="partner-title">${partner.name}</h3>
+              <p class="partner-spotlight-tagline">${partner.tagline}</p>
+            </div>
+          </div>
+          <p class="partner-copy">${partner.description}</p>
+          <div class="partner-moving-card__foot" aria-hidden="true">
+            <span>Open</span>
+            ${externalIconSmall()}
+          </div>
+        </a>
+      `).join("");
+
+      return `
+        <div class="partner-marquee-shell">
+          <div class="partner-marquee-row${reverse ? " partner-marquee-row--reverse" : ""}">
+            ${row}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMovingCards() {
+      partnerStage.innerHTML = `
+        <div style="display:grid; gap:1rem;">
+          ${movingCardsMarkup(false)}
+          ${movingCardsMarkup(true)}
+        </div>
+      `;
+    }
+
+    function pillMarkup(partner) {
+      return `
+        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+          ${logoMarkup(partner)}
+          <span>${partner.name}</span>
+        </button>
+      `;
+    }
+
+    function initPillsMarqueeScrub(shell) {
+      if (!shell) {
+        return;
+      }
+      const row = shell.querySelector(".partner-pills-row");
+      if (!row) {
+        return;
+      }
+
+      const DURATION = 44000;
+
+      function wrapTime(ms) {
+        let t = ms % DURATION;
+        if (t < 0) {
+          t += DURATION;
+        }
+        return t;
+      }
+
+      const anim = row.animate(
+        [{ transform: "translateX(0)" }, { transform: "translateX(-50%)" }],
+        { duration: DURATION, iterations: Infinity, easing: "linear" }
+      );
+
+      let active = false;
+      let startX = 0;
+      let time0 = 0;
+      let dragMoved = false;
+      let blockNextClick = false;
+      let hoverPaused = false;
+
+      function travelPx() {
+        return Math.max(1, row.offsetWidth / 2);
+      }
+
+      function resumeIfAllowed() {
+        if (!active && !hoverPaused) {
+          anim.play();
+        }
+      }
+
+      shell.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) {
+          return;
+        }
+        active = true;
+        dragMoved = false;
+        blockNextClick = false;
+        startX = e.clientX;
+        anim.pause();
+        time0 = wrapTime(anim.currentTime);
+        shell.classList.add("partner-pills-shell--grabbing");
+        shell.dataset.dragging = "0";
+        try {
+          shell.setPointerCapture(e.pointerId);
+        } catch (_) {}
+      });
+
+      shell.addEventListener("pointermove", (e) => {
+        if (!active) {
+          return;
+        }
+        const dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) {
+          dragMoved = true;
+          shell.dataset.dragging = "1";
+        }
+        const tp = travelPx();
+        anim.currentTime = wrapTime(time0 - (dx / tp) * DURATION);
+      });
+
+      const endDrag = (e) => {
+        if (!active) {
+          return;
+        }
+        active = false;
+        shell.classList.remove("partner-pills-shell--grabbing");
+        shell.dataset.dragging = "0";
+        if (dragMoved) {
+          blockNextClick = true;
+        }
+        resumeIfAllowed();
+        try {
+          shell.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+      };
+
+      shell.addEventListener("pointerup", endDrag);
+      shell.addEventListener("pointercancel", endDrag);
+
+      shell.addEventListener(
+        "click",
+        (e) => {
+          if (!blockNextClick) {
+            return;
+          }
+          blockNextClick = false;
+          e.preventDefault();
+          e.stopPropagation();
+        },
+        true
+      );
+
+      shell.addEventListener("mouseenter", () => {
+        hoverPaused = true;
+        if (!active) {
+          anim.pause();
+        }
+      });
+
+      shell.addEventListener("mouseleave", () => {
+        hoverPaused = false;
+        resumeIfAllowed();
+      });
+
+      shell.addEventListener("focusin", () => {
+        hoverPaused = true;
+        if (!active) {
+          anim.pause();
+        }
+      });
+
+      shell.addEventListener("focusout", (e) => {
+        if (shell.contains(e.relatedTarget)) {
+          return;
+        }
+        hoverPaused = false;
+        resumeIfAllowed();
+      });
+    }
+
+    function syncSpotlightMinHeight() {
+      if (!partnerStage || activeVariant !== "pills-spotlight") {
+        return;
+      }
+
+      const measure = document.createElement("div");
+      measure.className = "partner-spotlight-measure";
+      measure.innerHTML = PARTNERS.map((partner) => spotlightContent(partner, "Partner focus", false)).join("");
+      partnerStage.appendChild(measure);
+
+      const maxHeight = Math.max(
+        320,
+        ...Array.from(measure.querySelectorAll(".partner-spotlight-panel")).map((panel) => panel.offsetHeight)
+      );
+      measure.remove();
+
+      if (maxHeight > 0) {
+        partnerStage.style.setProperty("--partner-spotlight-min-height", `${Math.ceil(maxHeight)}px`);
+      }
+    }
+
+    function renderPillsSpotlight() {
+      activePartnerId = partnerById("sarahs-home")?.id || PARTNERS[0].id;
+      const pills = PARTNERS.concat(PARTNERS).map((partner) => pillMarkup(partner)).join("");
+      partnerStage.innerHTML = `
+        <div class="partner-marquee-shell partner-pills-shell" id="partnerPillsScroll" aria-label="Partner pills — drag to move within the marquee">
+          <div class="partner-pills-row">
+            ${pills}
+          </div>
+        </div>
+        <div id="partnerSpotlightMount">
+          ${spotlightContent(partnerById(activePartnerId), "Partner focus", false)}
+        </div>
+      `;
+      syncSpotlightMinHeight();
+      initPillsMarqueeScrub(document.getElementById("partnerPillsScroll"));
+    }
+
+    function renderDirectory() {
+      const activePartner = partnerById(activePartnerId);
+      partnerStage.innerHTML = `
+        <div class="partner-directory">
+          <div class="partner-directory-list">
+            ${PARTNERS.map((partner) => `
+              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+                ${logoMarkup(partner)}
+                <div>
+                  <div class="partner-title">${partner.name}</div>
+                  <small>${partner.tagline}</small>
+                </div>
+              </button>
+            `).join("")}
+          </div>
+          <div id="partnerDirectoryFeature" class="partner-directory-feature">
+            ${directoryFeatureMarkup(activePartner)}
+          </div>
+        </div>
+      `;
+    }
+
+    function directoryFeatureMarkup(partner) {
+      return `
+        <article class="partner-feature-card">
+          <div class="partner-spotlight-meta">Selected partner</div>
+          <div class="partner-feature-grid">
+            ${logoMarkup(partner, "lg")}
+            <div>
+              <h3 class="partner-title" style="font-size:1.6rem;">${partner.name}</h3>
+              <p class="partner-spotlight-tagline">${partner.tagline}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              ${ctaMarkup(partner)}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderActiveVariant() {
+      if (activeVariant === "accordion") {
+        renderAccordion();
+        return;
+      }
+      if (activeVariant === "bento") {
+        renderBento();
+        return;
+      }
+      if (activeVariant === "moving-cards") {
+        renderMovingCards();
+        return;
+      }
+      if (activeVariant === "pills-spotlight") {
+        renderPillsSpotlight();
+        return;
+      }
+      renderDirectory();
+    }
+
+    function syncVariantState() {
+      localStorage.setItem("ucount-partners-variant", activeVariant);
+      const url = new URL(window.location.href);
+      url.searchParams.set("partners", activeVariant);
+      history.replaceState({}, "", url);
+    }
+
+    function initVariantFromLocation() {
+      const url = new URL(window.location.href);
+      const urlVariant = url.searchParams.get("partners");
+      const allowed = new Set(PARTNER_VARIANTS.map((variant) => variant.id));
+      activeVariant = allowed.has(urlVariant) ? urlVariant : "pills-spotlight";
+    }
+
+    function renderPartnersLab() {
+      renderActiveVariant();
+    }
+
+    function refreshInteractiveVariant() {
+      if (activeVariant === "pills-spotlight") {
+        const spotlightMount = document.getElementById("partnerSpotlightMount");
+        if (spotlightMount) {
+          const oldPanel = spotlightMount.querySelector(".partner-spotlight-panel");
+          if (oldPanel) {
+            oldPanel.setAttribute("data-animate-out", "true");
+            oldPanel.addEventListener("animationend", () => {
+              spotlightMount.innerHTML = spotlightContent(partnerById(activePartnerId), "Partner focus", true);
+            }, { once: true });
+          } else {
+            spotlightMount.innerHTML = spotlightContent(partnerById(activePartnerId), "Partner focus", true);
+          }
+        }
+        partnerStage.querySelectorAll("[data-partner-id]").forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.partnerId === activePartnerId);
+        });
+        return;
+      }
+
+      if (activeVariant === "directory") {
+        const featureMount = document.getElementById("partnerDirectoryFeature");
+        if (featureMount) {
+          const oldCard = featureMount.querySelector(".partner-feature-card");
+          if (oldCard) {
+            oldCard.style.animation = "partner-spotlight-out 0.2s ease-in both";
+            oldCard.addEventListener("animationend", () => {
+              featureMount.innerHTML = `<div style="animation: partner-spotlight-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both">${directoryFeatureMarkup(partnerById(activePartnerId))}</div>`;
+            }, { once: true });
+          } else {
+            featureMount.innerHTML = directoryFeatureMarkup(partnerById(activePartnerId));
+          }
+        }
+        partnerStage.querySelectorAll("[data-partner-id]").forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.partnerId === activePartnerId);
+        });
+      }
+    }
+
+    if (partnerSwitch) {
+      partnerSwitch.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-variant]");
+        if (!button) {
+          return;
+        }
+
+        activeVariant = button.dataset.variant;
+        syncVariantState();
+        renderPartnersLab();
+      });
+    }
+
+    partnerStage.addEventListener("click", (event) => {
+      const control = event.target.closest("[data-partner-id]");
+      if (!control) {
+        return;
+      }
+
+      activePartnerId = control.dataset.partnerId;
+      if (activeVariant === "pills-spotlight" || activeVariant === "directory") {
+        refreshInteractiveVariant();
+      }
+    });
+
+    partnerStage.addEventListener("mouseover", (event) => {
+      if (activeVariant !== "pills-spotlight") {
+        return;
+      }
+
+      const shell = document.getElementById("partnerPillsScroll");
+      if (shell && shell.dataset.dragging === "1") {
+        return;
+      }
+
+      const control = event.target.closest("[data-partner-id]");
+      if (!control) {
+        return;
+      }
+
+      if (control.dataset.partnerId === activePartnerId) {
+        return;
+      }
+
+      activePartnerId = control.dataset.partnerId;
+      refreshInteractiveVariant();
+    });
+
+    partnerStage.addEventListener("focusin", (event) => {
+      const control = event.target.closest("[data-partner-id]");
+      if (!control) {
+        return;
+      }
+
+      if (control.dataset.partnerId === activePartnerId) {
+        return;
+      }
+
+      activePartnerId = control.dataset.partnerId;
+      if (activeVariant === "pills-spotlight" || activeVariant === "directory") {
+        refreshInteractiveVariant();
+      }
+    });
+
+    let accordionWmResizeTimer;
+    window.addEventListener("resize", () => {
+      clearTimeout(accordionWmResizeTimer);
+      accordionWmResizeTimer = setTimeout(() => {
+        syncAccordionWatermarkVisibility();
+        syncSpotlightMinHeight();
+      }, 120);
+    });
+
+    activeVariant = "pills-spotlight";
+    renderPartnersLab();
+  </script>
+</BaseLayout>

@@ -1,0 +1,235 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  cmsText,
+  getInitiatives,
+  getPageSection,
+  getSiteSettings,
+  resolveSiteSettings,
+  getTeamMembers,
+  getValues,
+} from "../lib/wix-cms";
+
+const [
+  siteSettings,
+  heroContent,
+  missionContent,
+  ctaContent,
+  initiativesResult,
+  teamMembersResult,
+  valuesResult,
+] = await Promise.all([
+  getSiteSettings(),
+  getPageSection("about", "hero"),
+  getPageSection("about", "mission-intro"),
+  getPageSection("about", "cta"),
+  getInitiatives("about"),
+  getTeamMembers(),
+  getValues(),
+]);
+
+const site = resolveSiteSettings(siteSettings);
+
+const hero = {
+  title: cmsText(heroContent?.title, "Who We Are"),
+  body: cmsText(
+    heroContent?.body,
+    "U COUNT is a 100% volunteer organization, including its leadership. Each of us volunteers our time and talents because we wholeheartedly believe that every person has value and deserves freedom.",
+  ),
+};
+
+const mission = {
+  eyebrow: cmsText(missionContent?.eyebrow, "What We Do"),
+  title: cmsText(missionContent?.title, "Our Mission"),
+  body: cmsText(
+    missionContent?.body,
+    "We fight global and local sex trafficking through prevention, awareness, and restoration. We do this with hope, courage, compassion, and vision across Global Projects, Local Efforts, and Marketplace.",
+  ),
+};
+
+const cta = {
+  title: cmsText(ctaContent?.title, "Get Involved"),
+  body: cmsText(
+    ctaContent?.body,
+    "Every person carries dignity. Join us in pursuing justice with hope, compassion, courage, and community.",
+  ),
+  primaryCtaLabel: cmsText(ctaContent?.primaryCtaLabel, "Contact Us"),
+  primaryCtaUrl: cmsText(ctaContent?.primaryCtaUrl, "/contact"),
+  secondaryCtaLabel: cmsText(ctaContent?.secondaryCtaLabel, "Donate"),
+  secondaryCtaUrl: cmsText(ctaContent?.secondaryCtaUrl, site.primaryDonateUrl),
+};
+
+const defaultInitiatives = [
+  {
+    title: "Prevention",
+    shortDescription:
+      "Compassionate prevention through intelligence-led intervention before exploitation begins.",
+    accentToken: "ember-brand",
+  },
+  {
+    title: "Awareness",
+    shortDescription: "Courageous awareness that opens eyes and mobilizes communities.",
+    accentToken: "gold-400",
+  },
+  {
+    title: "Restoration",
+    shortDescription: "Grace-filled restoration rooted in safety, dignity, and opportunity.",
+    accentToken: "sky-400",
+  },
+];
+
+const defaultValues = [
+  "Hope",
+  "Courage",
+  "Collaborate",
+  "Community",
+  "Compassion",
+  "Dignity",
+  "Justice",
+  "Grace",
+  "Persevere",
+  "Vision",
+].map((title) => ({ title }));
+
+const initiatives = (initiativesResult.length ? initiativesResult : defaultInitiatives).map(
+  (initiative) => ({
+    title: cmsText(initiative.title, ""),
+    description: cmsText(initiative.shortDescription, ""),
+    accentToken: cmsText(initiative.accentToken, "ember-brand"),
+  }),
+);
+
+const values = (valuesResult.length ? valuesResult : defaultValues).map((value) => ({
+  title: cmsText(value.title, ""),
+}));
+
+const teamMembers = teamMembersResult.map((member) => ({
+  name: cmsText(member.name, ""),
+  role: cmsText(member.role, ""),
+  headshot: cmsText(member.headshot, ""),
+  shortBio: cmsText(member.shortBio, ""),
+  longBio: cmsText(member.longBio, cmsText(member.shortBio, "")),
+}));
+
+const accentClass = (token: string) =>
+  ({
+    "ember-brand": "bg-ember-brand/20 text-ember-brand",
+    "gold-400": "bg-gold-500/20 text-gold-400",
+    "sky-400": "bg-sky-500/20 text-sky-400",
+  })[token] ?? "bg-ember-brand/20 text-ember-brand";
+---
+<BaseLayout title="About Us — U COUNT" site={site} activePage="about">
+  <!-- PAGE HERO -->
+  <section class="relative bg-ember-50/40 pt-28 pb-16 lg:pt-36 lg:pb-20">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+      <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-neutral-900 mb-6 fade-up">
+        {hero.title}
+      </h1>
+      <p class="text-lg lg:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed fade-up" style="animation-delay: 0.15s;">
+        {hero.body}
+      </p>
+    </div>
+  </section>
+
+  <!-- OUR MISSION -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">{mission.eyebrow}</span>
+          <div class="w-12 h-px bg-ember-brand"></div>
+        </div>
+        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900 mb-6">{mission.title}</h2>
+        <p class="text-lg text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+          {mission.body}
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-3 gap-6">
+        {initiatives.map((initiative) => (
+          <div class="p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4 mb-3">
+              <div class={`w-10 h-10 rounded-xl flex items-center justify-center ${accentClass(initiative.accentToken).split(" ")[0]}`}>
+                <svg class={`w-5 h-5 ${accentClass(initiative.accentToken).split(" ")[1]}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/></svg>
+              </div>
+              <h3 class="font-display font-bold text-lg text-neutral-900">{initiative.title}</h3>
+            </div>
+            <p class="text-neutral-600 text-sm leading-relaxed">{initiative.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- DIRECTIONAL TEAM -->
+  <section class="py-20 lg:py-28 bg-neutral-50">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">Leadership</span>
+          <div class="w-12 h-px bg-ember-brand"></div>
+        </div>
+        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">DIRECTIONAL TEAM</h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {teamMembers.map((member) => (
+          <div class="bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            <img src={member.headshot} alt={member.name} class="w-full h-72 object-cover object-top">
+            <div class="p-6">
+              <h3 class="font-display font-bold text-lg text-neutral-900">{member.name}</h3>
+              <p class="text-ember-brand font-semibold text-sm mb-3">{member.role}</p>
+              <details class="group">
+                <summary class="flex items-center gap-2 cursor-pointer text-sm font-medium text-neutral-500 hover:text-neutral-700 transition-colors">
+                  <span>Read bio</span>
+                  <svg class="chevron-icon w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </summary>
+                <p class="text-sm text-neutral-600 leading-relaxed mt-3">{member.longBio}</p>
+              </details>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- BRAND VALUES -->
+  <section class="py-20 lg:py-28">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">What Drives Us</span>
+          <div class="w-12 h-px bg-ember-brand"></div>
+        </div>
+        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">Our Values</h2>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-4">
+        {values.map((value) => (
+          <span class="px-6 py-3 rounded-full bg-ember-50 border border-ember-200 text-ember-700 font-display font-semibold text-base">{value.title}</span>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20 lg:py-28 bg-ember-50/40">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+      <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900 mb-8">{cta.title}</h2>
+      <p class="text-lg text-neutral-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+        {cta.body}
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a href={cta.primaryCtaUrl} class="inline-flex items-center gap-2 px-8 py-4 bg-neutral-900 text-white font-display font-semibold text-base rounded-full hover:bg-neutral-800 transition-all shadow-xl shadow-neutral-900/20">
+          {cta.primaryCtaLabel}
+        </a>
+        <a href={cta.secondaryCtaUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-8 py-4 border-2 border-ember-brand text-ember-700 font-display font-semibold text-base rounded-full hover:bg-ember-50 transition-all">
+          {cta.secondaryCtaLabel}
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
