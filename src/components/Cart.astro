@@ -1,0 +1,446 @@
+---
+const checkoutErrorMessage =
+  "Checkout could not be started. Please try again or contact U COUNT for help.";
+---
+
+<div data-cart-root>
+  <div
+    data-cart-overlay
+    class="fixed inset-0 z-[60] bg-neutral-900/50 opacity-0 pointer-events-none transition-opacity duration-300"
+    aria-hidden="true"
+  ></div>
+
+  <aside
+    id="cartDrawer"
+    data-cart-drawer
+    class="fixed top-0 right-0 z-[70] flex h-screen w-full max-w-md translate-x-full flex-col bg-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cartDrawerTitle"
+    aria-hidden="true"
+  >
+    <header class="flex items-center justify-between border-b border-neutral-100 px-6 py-5">
+      <h2 id="cartDrawerTitle" class="font-display text-xl font-bold text-neutral-900">
+        Your Cart <span class="text-neutral-400" data-cart-title-count>(0)</span>
+      </h2>
+      <button
+        type="button"
+        data-cart-close
+        class="-mr-2 flex h-10 w-10 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
+        aria-label="Close cart"
+      >
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto px-6">
+      <div data-cart-empty class="flex h-full flex-col items-center justify-center py-16 text-center" hidden>
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-ember-50 text-ember-brand">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293A1 1 0 005.414 17H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        </div>
+        <p class="mt-5 font-display text-lg font-semibold text-neutral-900">Your cart is empty</p>
+        <p class="mt-1 text-sm text-neutral-500">Browse the marketplace to find handmade goods that support survivors.</p>
+        <a href="/shop" data-cart-close class="mt-6 inline-flex items-center justify-center rounded-full bg-ember-brand px-6 py-3 font-display text-sm font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500">
+          Shop the marketplace
+        </a>
+      </div>
+
+      <ul data-cart-items class="divide-y divide-neutral-100 py-2"></ul>
+    </div>
+
+    <footer data-cart-footer class="border-t border-neutral-100 px-6 py-5" hidden>
+      <div class="flex items-center justify-between">
+        <span class="font-display text-sm font-semibold uppercase tracking-[0.16em] text-neutral-500">Subtotal</span>
+        <span class="font-display text-2xl font-bold text-neutral-900" data-cart-subtotal>$0.00</span>
+      </div>
+      <p class="mt-1.5 text-xs text-neutral-400">Shipping &amp; taxes calculated at checkout.</p>
+
+      <p data-cart-error class="mt-4 rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm font-semibold text-danger-500" hidden>
+        {checkoutErrorMessage}
+      </p>
+
+      <form action="/api/checkout" method="POST" data-cart-checkout-form class="mt-4">
+        <input type="hidden" name="cart" value="" data-cart-payload />
+        <button
+          type="submit"
+          data-cart-checkout
+          class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-ember-brand px-6 py-3.5 font-display text-sm font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500 disabled:cursor-not-allowed disabled:bg-neutral-300 disabled:shadow-none"
+        >
+          <span data-cart-checkout-label>Checkout</span>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </button>
+      </form>
+
+      <button type="button" data-cart-close class="mt-3 block w-full text-center text-sm font-semibold text-neutral-500 transition-colors hover:text-ember-brand">
+        Continue shopping
+      </button>
+    </footer>
+  </aside>
+</div>
+
+<template data-cart-item-template>
+  <li class="flex gap-4 py-5" data-cart-item>
+    <a class="block h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-neutral-100" data-cart-item-link>
+      <img class="h-full w-full object-cover" data-cart-item-image alt="" loading="lazy" />
+    </a>
+    <div class="flex min-w-0 flex-1 flex-col">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <a class="font-display text-sm font-semibold leading-tight text-neutral-900 transition-colors hover:text-ember-brand" data-cart-item-link data-cart-item-name></a>
+          <p class="mt-0.5 text-xs text-neutral-500" data-cart-item-variant hidden></p>
+          <p class="mt-0.5 text-xs font-semibold text-ember-600" data-cart-item-limit hidden></p>
+        </div>
+        <button type="button" class="-mr-1 -mt-1 shrink-0 rounded-full p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-danger-500" data-cart-item-remove aria-label="Remove item">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="mt-auto flex items-center justify-between gap-3 pt-3">
+        <div class="inline-flex h-9 overflow-hidden rounded-lg border border-neutral-200 bg-white">
+          <button type="button" class="flex w-8 items-center justify-center text-neutral-600 transition-colors hover:bg-neutral-50" data-cart-item-decrement aria-label="Decrease quantity">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14"/></svg>
+          </button>
+          <span class="flex w-8 items-center justify-center text-sm font-semibold text-neutral-900" data-cart-item-quantity>1</span>
+          <button type="button" class="flex w-8 items-center justify-center text-neutral-600 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:text-neutral-300" data-cart-item-increment aria-label="Increase quantity">
+            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <span class="font-display text-sm font-bold text-ember-brand" data-cart-item-total></span>
+      </div>
+    </div>
+  </li>
+</template>
+
+<script>
+  const STORAGE_KEY = "ucount-cart";
+  const MAX_QUANTITY = 100;
+
+  type CartItem = {
+    key: string;
+    productId: string;
+    productSlug: string;
+    variantId: string;
+    name: string;
+    variantLabel: string;
+    price: string;
+    priceValue: number;
+    currency: string;
+    image: string;
+    url: string;
+    quantity: number;
+    maxQuantity: number | null;
+  };
+
+  const root = document.querySelector("[data-cart-root]");
+  const drawer = document.querySelector<HTMLElement>("[data-cart-drawer]");
+  const overlay = document.querySelector<HTMLElement>("[data-cart-overlay]");
+  const itemsList = document.querySelector<HTMLElement>("[data-cart-items]");
+  const emptyState = document.querySelector<HTMLElement>("[data-cart-empty]");
+  const footer = document.querySelector<HTMLElement>("[data-cart-footer]");
+  const subtotalEl = document.querySelector<HTMLElement>("[data-cart-subtotal]");
+  const titleCountEl = document.querySelector<HTMLElement>("[data-cart-title-count]");
+  const payloadInput = document.querySelector<HTMLInputElement>("[data-cart-payload]");
+  const checkoutForm = document.querySelector<HTMLFormElement>("[data-cart-checkout-form]");
+  const checkoutButton = document.querySelector<HTMLButtonElement>("[data-cart-checkout]");
+  const checkoutLabel = document.querySelector<HTMLElement>("[data-cart-checkout-label]");
+  const checkoutError = document.querySelector<HTMLElement>("[data-cart-error]");
+  const template = document.querySelector<HTMLTemplateElement>("[data-cart-item-template]");
+
+  function readCart(): CartItem[] {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter(isValidItem) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function isValidItem(item: unknown): item is CartItem {
+    if (!item || typeof item !== "object") {
+      return false;
+    }
+    const record = item as Record<string, unknown>;
+    return (
+      typeof record.productId === "string" &&
+      typeof record.productSlug === "string" &&
+      typeof record.quantity === "number"
+    );
+  }
+
+  function writeCart(cart: CartItem[]) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+  }
+
+  function clampQuantity(value: number, max?: number | null): number {
+    const upper =
+      typeof max === "number" && max > 0 ? Math.min(MAX_QUANTITY, max) : MAX_QUANTITY;
+    if (!Number.isFinite(value)) {
+      return 1;
+    }
+    return Math.min(upper, Math.max(1, Math.round(value)));
+  }
+
+  function totalQuantity(cart: CartItem[]): number {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  function formatMoney(value: number, currency: string): string {
+    const symbol = currency || "$";
+    return `${symbol}${value.toFixed(2)}`;
+  }
+
+  function updateBadges(cart: CartItem[]) {
+    const count = totalQuantity(cart);
+    document.querySelectorAll<HTMLElement>("[data-cart-count]").forEach((badge) => {
+      badge.textContent = String(count);
+      badge.hidden = count === 0;
+    });
+    if (titleCountEl) {
+      titleCountEl.textContent = `(${count})`;
+    }
+  }
+
+  function render() {
+    const cart = readCart();
+    updateBadges(cart);
+
+    if (!itemsList || !template) {
+      return;
+    }
+
+    itemsList.replaceChildren();
+
+    if (cart.length === 0) {
+      if (emptyState) emptyState.hidden = false;
+      if (footer) footer.hidden = true;
+      itemsList.hidden = true;
+      return;
+    }
+
+    if (emptyState) emptyState.hidden = true;
+    if (footer) footer.hidden = false;
+    itemsList.hidden = false;
+
+    const currency = cart[0]?.currency || "$";
+    let subtotal = 0;
+
+    cart.forEach((item) => {
+      subtotal += item.priceValue * item.quantity;
+      const node = template.content.firstElementChild?.cloneNode(true) as HTMLElement | null;
+      if (!node) return;
+
+      node.dataset.key = item.key;
+
+      node.querySelectorAll<HTMLAnchorElement>("[data-cart-item-link]").forEach((link) => {
+        link.href = item.url || "#";
+      });
+
+      const image = node.querySelector<HTMLImageElement>("[data-cart-item-image]");
+      if (image) {
+        image.src = item.image;
+        image.alt = item.name;
+      }
+
+      const nameEl = node.querySelector<HTMLElement>("[data-cart-item-name]");
+      if (nameEl) nameEl.textContent = item.name;
+
+      const variantEl = node.querySelector<HTMLElement>("[data-cart-item-variant]");
+      if (variantEl) {
+        if (item.variantLabel) {
+          variantEl.textContent = item.variantLabel;
+          variantEl.hidden = false;
+        } else {
+          variantEl.hidden = true;
+        }
+      }
+
+      const quantityEl = node.querySelector<HTMLElement>("[data-cart-item-quantity]");
+      if (quantityEl) quantityEl.textContent = String(item.quantity);
+
+      const totalEl = node.querySelector<HTMLElement>("[data-cart-item-total]");
+      if (totalEl) {
+        totalEl.textContent = formatMoney(item.priceValue * item.quantity, item.currency);
+      }
+
+      const atMax =
+        typeof item.maxQuantity === "number" && item.quantity >= item.maxQuantity;
+      const incrementButton = node.querySelector<HTMLButtonElement>(
+        "[data-cart-item-increment]",
+      );
+      if (incrementButton) {
+        incrementButton.disabled = atMax;
+      }
+
+      const limitEl = node.querySelector<HTMLElement>("[data-cart-item-limit]");
+      if (limitEl) {
+        if (typeof item.maxQuantity === "number" && item.maxQuantity <= 10) {
+          limitEl.textContent =
+            item.maxQuantity === 1
+              ? "Only 1 left in stock"
+              : `Only ${item.maxQuantity} left in stock`;
+          limitEl.hidden = false;
+        } else {
+          limitEl.hidden = true;
+        }
+      }
+
+      node
+        .querySelector("[data-cart-item-decrement]")
+        ?.addEventListener("click", () => changeQuantity(item.key, -1));
+      node
+        .querySelector("[data-cart-item-increment]")
+        ?.addEventListener("click", () => changeQuantity(item.key, 1));
+      node
+        .querySelector("[data-cart-item-remove]")
+        ?.addEventListener("click", () => removeItem(item.key));
+
+      itemsList.appendChild(node);
+    });
+
+    if (subtotalEl) {
+      subtotalEl.textContent = formatMoney(subtotal, currency);
+    }
+  }
+
+  function changeQuantity(key: string, delta: number) {
+    const cart = readCart();
+    const item = cart.find((entry) => entry.key === key);
+    if (!item) return;
+    item.quantity = clampQuantity(item.quantity + delta, item.maxQuantity);
+    writeCart(cart);
+    render();
+  }
+
+  function removeItem(key: string) {
+    const cart = readCart().filter((entry) => entry.key !== key);
+    writeCart(cart);
+    render();
+  }
+
+  function addItem(detail: Partial<CartItem>) {
+    if (!detail.productId || !detail.productSlug) {
+      return;
+    }
+
+    const variantId = detail.variantId ?? "";
+    const key = `${detail.productId}::${variantId}`;
+    const maxQuantity =
+      typeof detail.maxQuantity === "number" ? detail.maxQuantity : null;
+    const quantity = clampQuantity(detail.quantity ?? 1, maxQuantity);
+    const cart = readCart();
+    const existing = cart.find((entry) => entry.key === key);
+
+    if (existing) {
+      existing.maxQuantity = maxQuantity;
+      existing.quantity = clampQuantity(existing.quantity + quantity, maxQuantity);
+    } else {
+      cart.push({
+        key,
+        productId: detail.productId,
+        productSlug: detail.productSlug,
+        variantId,
+        name: detail.name ?? "Product",
+        variantLabel: detail.variantLabel ?? "",
+        price: detail.price ?? "",
+        priceValue: typeof detail.priceValue === "number" ? detail.priceValue : 0,
+        currency: detail.currency ?? "$",
+        image: detail.image ?? "",
+        url: detail.url ?? "#",
+        quantity,
+        maxQuantity,
+      });
+    }
+
+    writeCart(cart);
+    render();
+    openDrawer();
+  }
+
+  function openDrawer() {
+    if (checkoutError) checkoutError.hidden = true;
+    drawer?.classList.remove("translate-x-full");
+    drawer?.setAttribute("aria-hidden", "false");
+    overlay?.classList.remove("opacity-0", "pointer-events-none");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeDrawer() {
+    drawer?.classList.add("translate-x-full");
+    drawer?.setAttribute("aria-hidden", "true");
+    overlay?.classList.add("opacity-0", "pointer-events-none");
+    document.body.style.overflow = "";
+  }
+
+  document.querySelectorAll("[data-cart-open]").forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+      render();
+      openDrawer();
+    });
+  });
+
+  root?.querySelectorAll("[data-cart-close]").forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      const target = event.currentTarget as HTMLElement;
+      if (target.tagName !== "A") {
+        event.preventDefault();
+      }
+      closeDrawer();
+    });
+  });
+
+  overlay?.addEventListener("click", closeDrawer);
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && drawer?.getAttribute("aria-hidden") === "false") {
+      closeDrawer();
+    }
+  });
+
+  window.addEventListener("cart:add", (event) => {
+    const detail = (event as CustomEvent).detail as Partial<CartItem>;
+    if (detail) {
+      addItem(detail);
+    }
+  });
+
+  checkoutForm?.addEventListener("submit", (event) => {
+    const cart = readCart();
+    if (cart.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    if (payloadInput) {
+      payloadInput.value = JSON.stringify(
+        cart.map((item) => ({
+          productId: item.productId,
+          productSlug: item.productSlug,
+          variantId: item.variantId,
+          quantity: item.quantity,
+        })),
+      );
+    }
+    if (checkoutButton) {
+      checkoutButton.disabled = true;
+    }
+    if (checkoutLabel) {
+      checkoutLabel.textContent = "Starting checkout…";
+    }
+  });
+
+  if (
+    new URLSearchParams(window.location.search).get("checkout") === "error" &&
+    readCart().length > 0
+  ) {
+    render();
+    openDrawer();
+    if (checkoutError) checkoutError.hidden = false;
+  }
+
+  render();
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY) {
+      render();
+    }
+  });
+</script>

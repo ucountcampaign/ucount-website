@@ -1,0 +1,329 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  cmsText,
+  getPageSection,
+  getSiteSettings,
+  resolveSiteSettings,
+} from "../lib/wix-cms";
+import {
+  getEvents,
+  type EventAccent,
+  type EventItem,
+} from "../lib/wix-events";
+
+const [siteSettings, heroContent, eventsResult] = await Promise.all([
+  getSiteSettings(),
+  getPageSection("events", "hero"),
+  getEvents(),
+]);
+
+const site = resolveSiteSettings(siteSettings);
+const hero = {
+  eyebrow: cmsText(heroContent?.eyebrow, "Events"),
+  title: cmsText(heroContent?.title, "Gather for awareness, action, and impact."),
+  body: cmsText(
+    heroContent?.body,
+    "Shop the Marketplace, join community education, and stay connected to opportunities that help prevent trafficking and restore dignity.",
+  ),
+};
+
+const upcomingEvents = eventsResult.upcomingEvents;
+const pastEvents = eventsResult.pastEvents;
+const featuredEvent = upcomingEvents[0] ?? pastEvents[0];
+const upcomingInitialCount = 6;
+const pastInitialCount = 4;
+const featuredImageClass =
+  featuredEvent?.imageLayout === "contain"
+    ? "aspect-square h-full w-full bg-white object-contain p-5"
+    : "aspect-[4/5] h-full w-full object-cover";
+
+const accentClass = (accent: EventAccent) =>
+  ({
+    ember: {
+      panel: "border-ember-200 bg-ember-50/40",
+      icon: "bg-ember-brand text-white",
+      pill: "bg-ember-brand/10 text-ember-700",
+      button: "bg-ember-brand text-white hover:bg-ember-500 shadow-ember-brand/25",
+    },
+    gold: {
+      panel: "border-gold-200 bg-gold-50/60",
+      icon: "bg-gold-500 text-neutral-900",
+      pill: "bg-gold-500/15 text-gold-800",
+      button: "bg-neutral-900 text-white hover:bg-neutral-800 shadow-neutral-900/20",
+    },
+    sky: {
+      panel: "border-sky-200 bg-sky-50/60",
+      icon: "bg-sky-500 text-white",
+      pill: "bg-sky-500/15 text-sky-800",
+      button: "bg-neutral-900 text-white hover:bg-neutral-800 shadow-neutral-900/20",
+    },
+  })[accent];
+
+const mapHref = (event: EventItem) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    [event.venueName, ...event.addressLines].join(" "),
+  )}`;
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+);
+---
+
+<BaseLayout title="Events - U COUNT" site={site} activePage="events">
+  <section class="relative min-h-[34rem] overflow-hidden pt-32 pb-20 text-white lg:pt-40">
+    <img
+      src="/assets/photos/IMG_4722.jpg"
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      aria-hidden="true"
+    />
+    <div class="absolute inset-0 bg-neutral-950/70"></div>
+    <div class="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-950/70 to-ember-900/65"></div>
+
+    <div class="relative z-10 mx-auto flex min-h-[23rem] max-w-7xl items-end px-6 lg:px-8">
+      <div class="max-w-4xl">
+        <div class="mb-5 flex items-center gap-3">
+          <div class="h-px w-12 bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-200">{hero.eyebrow}</span>
+        </div>
+        <h1 class="font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-7xl">
+          {hero.title}
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-relaxed text-neutral-200 lg:text-xl">
+          {hero.body}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {featuredEvent && (
+    <section class="bg-white py-16 lg:py-24">
+      <div class="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,30rem)] lg:items-center lg:px-8">
+        <div>
+          <div class="mb-4 flex items-center gap-3">
+            <div class="h-px w-12 bg-ember-brand"></div>
+            <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">Featured Event</span>
+          </div>
+          <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">
+            {featuredEvent.title}
+          </h2>
+          <p class="mt-5 max-w-3xl text-lg leading-relaxed text-neutral-600">
+            {featuredEvent.summary}
+          </p>
+
+          <div class="mt-8 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Date & Time</p>
+              <p class="mt-2 font-display text-xl font-bold text-neutral-900">{featuredEvent.dateLabel}</p>
+              <p class="mt-1 text-sm font-medium text-ember-700">{featuredEvent.timeLabel}</p>
+            </div>
+            <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-5">
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Location</p>
+              <p class="mt-2 text-sm font-semibold leading-relaxed text-neutral-800">
+                {featuredEvent.venueName}<br />
+                {featuredEvent.addressLines.map((line) => (
+                  <>
+                    {line}<br />
+                  </>
+                ))}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href={featuredEvent.detailHref} class="inline-flex items-center justify-center rounded-full bg-ember-brand px-6 py-3 font-display text-sm font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500">
+              View Details
+            </a>
+            {featuredEvent.registrationHref && (
+              <a href={featuredEvent.registrationHref} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-6 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900">
+                {featuredEvent.registrationLabel}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm">
+          <img
+            src={featuredEvent.image}
+            alt={featuredEvent.imageAlt}
+            class={featuredImageClass}
+          />
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section class="bg-neutral-50 py-16 lg:py-24">
+    <div class="mx-auto max-w-7xl px-6 lg:px-8">
+      <div class="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div class="mb-4 flex items-center gap-3">
+            <div class="h-px w-12 bg-ember-brand"></div>
+            <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">Calendar</span>
+          </div>
+          <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">Upcoming Events</h2>
+        </div>
+        <a href="/contact" class="inline-flex w-fit items-center gap-2 rounded-full border-2 border-neutral-900 px-6 py-3 font-display text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white">
+          Volunteer
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        </a>
+      </div>
+
+      {upcomingEvents.length ? (
+        <>
+        <div class="grid gap-6 lg:grid-cols-2" data-event-list="upcoming">
+          {upcomingEvents.map((event, index) => {
+            const accent = accentClass(event.accent);
+
+            return (
+              <article class={`overflow-hidden rounded-2xl border bg-white shadow-sm ${accent.panel}`} data-event-card hidden={index >= upcomingInitialCount}>
+                <div class="grid h-full md:grid-cols-[12rem_minmax(0,1fr)]">
+                  <img
+                    src={event.image}
+                    alt={event.imageAlt}
+                    class:list={[
+                      "h-64 w-full md:h-full",
+                      event.imageLayout === "contain"
+                        ? "bg-white object-contain p-4"
+                        : "object-cover",
+                    ]}
+                  />
+                  <div class="flex min-h-full flex-col p-6">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ${accent.pill}`}>
+                        {event.eyebrow}
+                      </span>
+                      <span class="rounded-full bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">
+                        {event.badge}
+                      </span>
+                    </div>
+                    <h3 class="mt-4 font-display text-2xl font-bold text-neutral-900">{event.title}</h3>
+                    <p class="mt-3 text-sm leading-relaxed text-neutral-600">{event.summary}</p>
+
+                    <dl class="mt-5 grid gap-3 text-sm text-neutral-700">
+                      <div class="flex gap-3">
+                        <dt class={`mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full ${accent.icon}`}>
+                          <span class="sr-only">Date</span>
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        </dt>
+                        <dd>
+                          <time datetime={event.startDateTime} class="font-semibold text-neutral-900">{event.dateLabel}</time>
+                          <p>{event.timeLabel}</p>
+                        </dd>
+                      </div>
+                      <div class="flex gap-3">
+                        <dt class={`mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-full ${accent.icon}`}>
+                          <span class="sr-only">Location</span>
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10.5a2 2 0 100-4 2 2 0 000 4z"/></svg>
+                        </dt>
+                        <dd>
+                          <p class="font-semibold text-neutral-900">{event.venueName}</p>
+                          <p>{event.locationLabel}</p>
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                      <a
+                        href={event.detailHref}
+                        class={`inline-flex items-center justify-center rounded-full px-5 py-2.5 font-display text-sm font-semibold transition-colors shadow-lg ${accent.button}`}
+                      >
+                        View Details
+                      </a>
+                      {!event.locationIsTbd && event.addressLines.length > 0 && (
+                        <a href={mapHref(event)} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-5 py-2.5 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900">
+                          Directions
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+        {upcomingEvents.length > upcomingInitialCount && (
+          <div class="mt-8 flex justify-center">
+            <button type="button" data-event-show-more="upcoming" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-6 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white">
+              Show more upcoming events
+            </button>
+          </div>
+        )}
+        </>
+      ) : (
+        <div class="rounded-2xl border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p class="font-display text-2xl font-bold text-neutral-900">
+            {eventsResult.source === "wix" ? "No upcoming events are currently listed." : "Events are temporarily unavailable."}
+          </p>
+          <p class="mt-2 text-neutral-600">
+            {eventsResult.source === "wix"
+              ? "Check back soon or contact U COUNT about Marketplace appointments and volunteer opportunities."
+              : "The event calendar could not load. Please check back soon or contact U COUNT for current opportunities."}
+          </p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  {pastEvents.length > 0 && (
+    <section class="bg-white py-16 lg:py-20">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mb-8 flex items-center gap-3">
+          <div class="h-px w-12 bg-neutral-300"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">Recent Past Events</span>
+        </div>
+
+        <div class="grid gap-4" data-event-list="past">
+          {pastEvents.map((event, index) => (
+            <article class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" data-event-card hidden={index >= pastInitialCount}>
+              <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-neutral-500">Past</span>
+                    <span class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">{event.eyebrow}</span>
+                  </div>
+                  <h3 class="mt-3 font-display text-2xl font-bold text-neutral-900">{event.title}</h3>
+                  <p class="mt-2 text-sm leading-relaxed text-neutral-600">{event.summary}</p>
+                  <p class="mt-3 text-sm font-semibold text-neutral-700">
+                    <time datetime={event.startDateTime}>{event.dateLabel}</time> - {event.timeLabel}
+                  </p>
+                </div>
+                <a
+                  href={event.detailHref}
+                  class="inline-flex w-fit items-center justify-center rounded-full border border-neutral-300 px-5 py-2.5 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white"
+                >
+                  View Details
+                </a>
+              </div>
+            </article>
+          ))}
+        </div>
+        {pastEvents.length > pastInitialCount && (
+          <div class="mt-8 flex justify-center">
+            <button type="button" data-event-show-more="past" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-6 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900 hover:bg-neutral-900 hover:text-white">
+              Show more past events
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  )}
+
+  <script>
+    document.querySelectorAll("[data-event-show-more]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const listName = button.getAttribute("data-event-show-more");
+        const list = listName
+          ? document.querySelector(`[data-event-list="${listName}"]`)
+          : null;
+
+        list?.querySelectorAll("[data-event-card][hidden]").forEach((card) => {
+          card.removeAttribute("hidden");
+        });
+        button.remove();
+      });
+    });
+  </script>
+</BaseLayout>

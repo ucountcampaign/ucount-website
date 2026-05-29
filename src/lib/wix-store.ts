@@ -162,6 +162,7 @@ export type StoreProductVariant = {
   sku: string;
   inStock: boolean;
   visible: boolean;
+  quantity: number | null;
   image?: StoreProductImage;
 };
 
@@ -531,6 +532,14 @@ function findVariantImage(
   return undefined;
 }
 
+function getVariantQuantity(variant: WixProductVariant): number | null {
+  if (variant.stock?.trackQuantity && typeof variant.stock?.quantity === "number") {
+    return Math.max(0, variant.stock.quantity);
+  }
+
+  return null;
+}
+
 function getVariantPrice(variant: WixProductVariant, fallback: string): string {
   const priceData = variant.variant?.priceData ?? variant.variant?.convertedPriceData;
 
@@ -604,6 +613,7 @@ function mapVariants(
         sku: variant.variant?.sku?.trim() ?? "",
         visible: variant.variant?.visible !== false,
         inStock: variant.stock?.inStock !== false,
+        quantity: getVariantQuantity(variant),
         image: findVariantImage(product, variant, name),
       };
     })
@@ -972,38 +982,45 @@ function getCheckoutOptions(product: StoreProductDetail, variantId?: string) {
   return { variantId: variant.id };
 }
 
-export async function createCheckoutUrlForProduct({
-  productId,
-  productSlug,
-  quantity,
-  variantId,
-}: {
+export type CheckoutLineItemInput = {
   productId: string;
   productSlug: string;
   quantity: number;
   variantId?: string;
-}): Promise<string> {
-  const product = await getStoreProductBySlug(productSlug);
+};
 
-  if (!product || product.id !== productId || !product.inStock) {
+async function buildCheckoutLineItem(item: CheckoutLineItemInput) {
+  const product = await getStoreProductBySlug(item.productSlug);
+
+  if (!product || product.id !== item.productId || !product.inStock) {
     throw new Error("This product is not available.");
   }
 
-  const options = getCheckoutOptions(product, variantId);
+  const options = getCheckoutOptions(product, item.variantId);
+
+  return {
+    quantity: item.quantity,
+    catalogReference: {
+      appId: WIX_STORES_APP_ID,
+      catalogItemId: product.id,
+      ...(options ? { options } : {}),
+    },
+  };
+}
+
+export async function createCheckoutUrlForCart(
+  items: CheckoutLineItemInput[],
+): Promise<string> {
+  if (!items.length) {
+    throw new Error("Your cart is empty.");
+  }
+
+  const lineItems = await Promise.all(items.map(buildCheckoutLineItem));
   const createCheckoutResult = await wixApiRequest<{
     checkout?: { _id?: string; id?: string; checkoutUrl?: string };
   }>("/ecom/v1/checkouts", {
     channelType: "WEB",
-    lineItems: [
-      {
-        quantity,
-        catalogReference: {
-          appId: WIX_STORES_APP_ID,
-          catalogItemId: product.id,
-          ...(options ? { options } : {}),
-        },
-      },
-    ],
+    lineItems,
   });
 
   if (createCheckoutResult.checkout?.checkoutUrl) {
@@ -1026,4 +1043,10 @@ export async function createCheckoutUrlForProduct({
   }
 
   return resolveCheckoutUrl(checkoutUrlResult.checkoutUrl);
+}
+
+export async function createCheckoutUrlForProduct(
+  item: CheckoutLineItemInput,
+): Promise<string> {
+  return createCheckoutUrlForCart([item]);
 }

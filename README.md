@@ -14,6 +14,9 @@ Set `WIX_SITE_ID` to the ID of the official Wix site.
 Set separate server-only API keys for each Wix surface:
 
 - `WIX_DATA_API_KEY` for Wix CMS data reads.
+- `WIX_EVENTS_API_KEY` for Wix Events reads. If omitted, the site falls back to
+  `WIX_DATA_API_KEY`; the key used must have the Wix Events "Read Events"
+  permission.
 - `WIX_STORES_API_KEY` for store catalog reads and eCommerce checkout creation.
 - `WIX_FORMS_API_KEY` for Wix Forms submissions.
 

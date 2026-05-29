@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly WIX_SITE_ID?: string;
+  readonly WIX_EVENTS_API_KEY?: string;
   readonly WIX_DATA_API_KEY?: string;
   readonly WIX_STORES_API_KEY?: string;
   readonly WIX_FORMS_API_KEY?: string;

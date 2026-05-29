@@ -1,10 +1,11 @@
 ---
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
+import Cart from "../components/Cart.astro";
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 import "../styles/global.css";
 
-type ActivePage = "home" | "about" | "contact" | "shop";
+type ActivePage = "home" | "about" | "contact" | "events" | "shop";
 
 const { title, site, activePage } = Astro.props as {
   title: string;
@@ -28,5 +29,6 @@ const { title, site, activePage } = Astro.props as {
   <Header site={site} activePage={activePage} />
   <slot />
   <Footer site={site} activePage={activePage} />
+  <Cart />
 </body>
 </html>
