@@ -232,7 +232,7 @@ function getCachedStoreValue<T>(key: string, load: () => Promise<T>): Promise<T>
 }
 
 function createWixStoreClient() {
-  const apiKey = import.meta.env.WIX_API_KEY;
+  const apiKey = import.meta.env.WIX_STORES_API_KEY;
   const siteId = import.meta.env.WIX_SITE_ID;
 
   if (!apiKey || !siteId) {
@@ -254,7 +254,7 @@ function getWixStoreClient() {
   if (!wixStoreClient && !missingStoreCredentialsWarningShown) {
     missingStoreCredentialsWarningShown = true;
     console.warn(
-      "WIX_API_KEY or WIX_SITE_ID is not set; store products will be unavailable.",
+      "WIX_STORES_API_KEY or WIX_SITE_ID is not set; store products will be unavailable.",
     );
   }
 
@@ -903,11 +903,11 @@ export async function getStoreProductBySlug(
 }
 
 function wixApiHeaders() {
-  const apiKey = import.meta.env.WIX_API_KEY;
+  const apiKey = import.meta.env.WIX_STORES_API_KEY;
   const siteId = import.meta.env.WIX_SITE_ID;
 
   if (!apiKey || !siteId) {
-    throw new Error("WIX_API_KEY or WIX_SITE_ID is not set.");
+    throw new Error("WIX_STORES_API_KEY or WIX_SITE_ID is not set.");
   }
 
   return {

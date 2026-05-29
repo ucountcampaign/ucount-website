@@ -9,19 +9,36 @@ pnpm install
 cp .env.example .env
 ```
 
-Set `WIX_CLIENT_ID` to the Headless client ID from the official Wix site dashboard.
+Set `WIX_SITE_ID` to the ID of the official Wix site.
 
-Set `WIX_SITE_ID` and a server-only `WIX_API_KEY` for store catalog and checkout
-access. The same API key needs eCommerce checkout permissions if the Astro
-product pages should send visitors directly to Wix checkout.
+Set separate server-only API keys for each Wix surface:
+
+- `WIX_DATA_API_KEY` for Wix CMS data reads.
+- `WIX_STORES_API_KEY` for store catalog reads and eCommerce checkout creation.
+- `WIX_FORMS_API_KEY` for Wix Forms submissions.
 
 If Wix returns checkout URLs on the same domain as the Astro deployment, set
 `WIX_CHECKOUT_BASE_URL` to the separate Wix-managed checkout domain so `/checkout`
 does not get handled by Astro.
 
-To submit the Astro contact form into Wix Forms, set `WIX_CONTACT_FORM_ID` and
-the field-key variables from the Wix Forms schema. The API key also needs the
-Wix Forms "Manage Submissions" permission.
+To submit the Astro contact form into Wix Forms, set `WIX_CONTACT_FORM_ID`. The
+forms key needs the Wix Forms "Manage Form Submissions" permission. This site
+uses the modern Wix Forms `Astro Contact Form` schema:
+
+```sh
+WIX_CONTACT_FORM_ID="1a784f54-c174-4349-8d67-7dbf93214af5"
+WIX_CONTACT_FIELD_FIRST_NAME="first_name_5b78"
+WIX_CONTACT_FIELD_LAST_NAME="last_name_3ab0"
+WIX_CONTACT_FIELD_EMAIL="email_df1a"
+WIX_CONTACT_FIELD_MESSAGE="message"
+```
+
+The legacy editor contact page uses Old Wix Forms and Payments, and its DOM IDs
+such as `comp-*` are not valid IDs for the public Forms v4 submissions API.
+
+The Astro form requires first name, email, and message. Last name is submitted
+when provided but is optional. The configured Wix form should have notifications
+or automations enabled for the recipients who should receive the email.
 
 If a CMS collection was created manually and Wix assigned an immutable collection ID
 like `Import1`, map the app's expected collection name to that real ID:

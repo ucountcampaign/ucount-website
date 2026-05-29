@@ -1,9 +1,10 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly WIX_CLIENT_ID?: string;
   readonly WIX_SITE_ID?: string;
-  readonly WIX_API_KEY?: string;
+  readonly WIX_DATA_API_KEY?: string;
+  readonly WIX_STORES_API_KEY?: string;
+  readonly WIX_FORMS_API_KEY?: string;
   readonly WIX_CHECKOUT_BASE_URL?: string;
   readonly WIX_CMS_COLLECTION_ALIASES?: string;
   readonly WIX_CONTACT_FORM_ID?: string;
