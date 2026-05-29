@@ -40,7 +40,13 @@ pnpm dev
 
 Astro is configured with `output: "server"` and the Cloudflare adapter, so the
 marketplace and product pages render server-side. Wix store reads are memoized in
-the Worker process for five minutes, and the storefront pages send:
+the Worker process for five minutes. Wix CMS reads are also memoized in the
+Worker process for five minutes, keep stale successful values for one hour if
+Wix is temporarily unavailable, and short-cache failures for 30 seconds so a Wix
+timeout does not cause every request to retry immediately. Page content sections
+are loaded once per page key and shared by `getPageSection()` calls.
+
+The storefront pages send:
 
 ```txt
 Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=3600

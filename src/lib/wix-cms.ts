@@ -4,6 +4,9 @@ import * as items from "@wix/wix-data-items-sdk";
 type CmsRecord = Record<string, unknown>;
 
 export type PageContent = {
+  pageKey?: string | null;
+  sectionKey?: string | null;
+  isPublished?: boolean | null;
   eyebrow?: string | null;
   title?: string | null;
   subtitle?: string | null;
@@ -151,6 +154,19 @@ type WixQuery = {
   find: (options: { consistentRead: boolean }) => Promise<{ items: unknown[] }>;
 };
 
+const cmsCacheTtlMs = 5 * 60 * 1000;
+const cmsStaleTtlMs = 60 * 60 * 1000;
+const cmsErrorCacheTtlMs = 30 * 1000;
+
+type CmsCacheEntry<T> = {
+  expiresAt: number;
+  staleUntil: number;
+  value: Promise<T>;
+  resolvedValue?: T;
+};
+
+const cmsCache = new Map<string, CmsCacheEntry<unknown>>();
+
 function getCollectionAliases(): Record<string, string> {
   const rawAliases = import.meta.env.WIX_CMS_COLLECTION_ALIASES;
 
@@ -208,6 +224,7 @@ function getWixDataClient() {
 
 async function queryCollection<T extends CmsRecord>(
   collectionId: string,
+  cacheKey: string,
   buildQuery?: (query: WixQuery) => WixQuery,
 ): Promise<T[]> {
   const client = getWixDataClient();
@@ -216,39 +233,122 @@ async function queryCollection<T extends CmsRecord>(
     return [];
   }
 
-  try {
-    const resolvedCollectionId = resolveCollectionId(collectionId);
-    const baseQuery = client.items.query(resolvedCollectionId);
-    const query = buildQuery ? buildQuery(baseQuery) : baseQuery;
-    const result = await query.find({ consistentRead: true });
+  const resolvedCollectionId = resolveCollectionId(collectionId);
 
-    return result.items as T[];
-  } catch (error) {
-    console.error(`Failed to load CMS collection ${collectionId}`, error);
-    return [];
+  return getCachedCmsValue(
+    `${resolvedCollectionId}:${cacheKey}`,
+    async () => {
+      const baseQuery = client.items.query(resolvedCollectionId);
+      const query = buildQuery ? buildQuery(baseQuery) : baseQuery;
+      const result = await query.find({ consistentRead: true });
+
+      return result.items as T[];
+    },
+    (error) => {
+      console.error(`Failed to load CMS collection ${collectionId}`, error);
+    },
+  );
+}
+
+function getCachedCmsValue<T>(
+  key: string,
+  load: () => Promise<T>,
+  onError: (error: unknown) => void,
+): Promise<T> {
+  const now = Date.now();
+  const cachedValue = cmsCache.get(key) as CmsCacheEntry<T> | undefined;
+
+  if (cachedValue && cachedValue.expiresAt > now) {
+    return cachedValue.value;
   }
+
+  const previousValue = cachedValue;
+  let nextEntry: CmsCacheEntry<T>;
+  const value = Promise.resolve()
+    .then(load)
+    .then((result) => {
+      nextEntry.resolvedValue = result;
+
+      return result;
+    })
+    .catch((error) => {
+      onError(error);
+
+      const retryAt = Date.now() + cmsErrorCacheTtlMs;
+
+      if (
+        previousValue?.resolvedValue !== undefined &&
+        previousValue.staleUntil > Date.now()
+      ) {
+        nextEntry.resolvedValue = previousValue.resolvedValue;
+        nextEntry.value = Promise.resolve(previousValue.resolvedValue);
+        nextEntry.expiresAt = retryAt;
+        nextEntry.staleUntil = previousValue.staleUntil;
+
+        return previousValue.resolvedValue;
+      }
+
+      const fallback = [] as T;
+      nextEntry.resolvedValue = fallback;
+      nextEntry.value = Promise.resolve(fallback);
+      nextEntry.expiresAt = retryAt;
+      nextEntry.staleUntil = retryAt;
+
+      return fallback;
+    });
+
+  nextEntry = {
+    expiresAt: now + cmsCacheTtlMs,
+    staleUntil: now + cmsStaleTtlMs,
+    value,
+  };
+  cmsCache.set(key, nextEntry);
+
+  return value;
+}
+
+function getPageSections(pageKey: string): Promise<(PageContent & CmsRecord)[]> {
+  return queryCollection<PageContent & CmsRecord>(
+    "PageContent",
+    `page:${pageKey}`,
+    (query) => query.eq("pageKey", pageKey).eq("isPublished", true).limit(100),
+  );
+}
+
+function bySortOrder<T extends CmsRecord>(left: T, right: T): number {
+  const leftOrder = typeof left.sortOrder === "number" ? left.sortOrder : 0;
+  const rightOrder = typeof right.sortOrder === "number" ? right.sortOrder : 0;
+
+  return leftOrder - rightOrder;
+}
+
+async function querySortedCollection<T extends CmsRecord>(
+  collectionId: string,
+  cacheKey: string,
+  buildQuery: (query: WixQuery) => WixQuery,
+): Promise<T[]> {
+  const rows = await queryCollection<T>(collectionId, cacheKey, buildQuery);
+
+  if (rows.length <= 1) {
+    return rows;
+  }
+
+  return [...rows].sort(bySortOrder);
 }
 
 export async function getPageSection(
   pageKey: string,
   sectionKey: string,
 ): Promise<PageContent | null> {
-  const sections = await queryCollection<PageContent & CmsRecord>(
-    "PageContent",
-    (query) =>
-      query
-        .eq("pageKey", pageKey)
-        .eq("sectionKey", sectionKey)
-        .eq("isPublished", true)
-        .limit(1),
-  );
+  const sections = await getPageSections(pageKey);
 
-  return sections[0] ?? null;
+  return sections.find((section) => section.sectionKey === sectionKey) ?? null;
 }
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const settings = await queryCollection<SiteSettings & CmsRecord>(
     "SiteSettings",
+    "singleton",
     (query) => query.limit(1),
   );
 
@@ -256,41 +356,53 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 }
 
 export function getImpactStats(groupKey: string): Promise<ImpactStat[]> {
-  return queryCollection<ImpactStat & CmsRecord>("ImpactStats", (query) =>
-    query.eq("groupKey", groupKey).eq("isActive", true).ascending("sortOrder"),
+  return querySortedCollection<ImpactStat & CmsRecord>(
+    "ImpactStats",
+    `group:${groupKey}`,
+    (query) =>
+      query.eq("groupKey", groupKey).eq("isActive", true).ascending("sortOrder"),
   );
 }
 
 export function getImpactAllocations(
   groupKey: string,
 ): Promise<ImpactAllocation[]> {
-  return queryCollection<ImpactAllocation & CmsRecord>(
+  return querySortedCollection<ImpactAllocation & CmsRecord>(
     "ImpactAllocations",
+    `group:${groupKey}`,
     (query) => query.eq("groupKey", groupKey).ascending("sortOrder"),
   );
 }
 
 export function getInitiatives(pageKey: string): Promise<Initiative[]> {
-  return queryCollection<Initiative & CmsRecord>("Initiatives", (query) =>
-    query.eq("pageKey", pageKey).ascending("sortOrder"),
+  return querySortedCollection<Initiative & CmsRecord>(
+    "Initiatives",
+    `page:${pageKey}`,
+    (query) => query.eq("pageKey", pageKey).ascending("sortOrder"),
   );
 }
 
 export function getPartners(): Promise<Partner[]> {
-  return queryCollection<Partner & CmsRecord>("Partners", (query) =>
-    query.eq("isActive", true).ascending("sortOrder"),
+  return querySortedCollection<Partner & CmsRecord>(
+    "Partners",
+    "active",
+    (query) => query.eq("isActive", true).ascending("sortOrder"),
   );
 }
 
 export function getTeamMembers(): Promise<TeamMember[]> {
-  return queryCollection<TeamMember & CmsRecord>("TeamMembers", (query) =>
-    query.eq("isActive", true).ascending("sortOrder"),
+  return querySortedCollection<TeamMember & CmsRecord>(
+    "TeamMembers",
+    "active",
+    (query) => query.eq("isActive", true).ascending("sortOrder"),
   );
 }
 
 export function getValues(): Promise<ValueItem[]> {
-  return queryCollection<ValueItem & CmsRecord>("Values", (query) =>
-    query.eq("isActive", true).ascending("sortOrder"),
+  return querySortedCollection<ValueItem & CmsRecord>(
+    "Values",
+    "active",
+    (query) => query.eq("isActive", true).ascending("sortOrder"),
   );
 }
 
