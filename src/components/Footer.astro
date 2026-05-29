@@ -1,7 +1,7 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 
-type ActivePage = "home" | "about" | "contact";
+type ActivePage = "home" | "about" | "contact" | "shop";
 
 const { site, activePage } = Astro.props as {
   site: ResolvedSiteSettings;
@@ -37,7 +37,7 @@ const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
           <li><a href={homeHref("#mission")} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Our Mission</a></li>
           <li><a href={homeHref("#impact")} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Our Impact</a></li>
           <li><a href={homeHref("#partners")} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Partners</a></li>
-          <li><a href={homeHref("#shop")} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Marketplace</a></li>
+          <li><a href="/shop" class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Marketplace</a></li>
           <li><a href="/about" class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">About Us</a></li>
           <li><a href={site.primaryDonateUrl} target="_blank" rel="noopener noreferrer" class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Donate</a></li>
         </ul>

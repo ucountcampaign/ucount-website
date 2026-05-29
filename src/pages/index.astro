@@ -239,6 +239,25 @@ const colorClass = (token: string) =>
 
 const bgColorClass = (token: string) => colorClass(token).split(" ")[0];
 const textColorClass = (token: string) => colorClass(token).split(" ")[1];
+const localizeInternalUrl = (url: string) => {
+  const value = url.trim();
+
+  if (
+    value === "#shop" ||
+    /wixstudio\.com\/wix-github-test#shop/i.test(value) ||
+    /ucountcampaign\.org\/shop\/?$/i.test(value)
+  ) {
+    return "/shop";
+  }
+
+  if (/ucountcampaign\.org\/contact-us-1\/?$/i.test(value)) {
+    return "/contact";
+  }
+
+  return value;
+};
+
+hero.primaryCtaUrl = localizeInternalUrl(hero.primaryCtaUrl);
 
 const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).map(
   (partner) => ({
@@ -253,6 +272,11 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
 const storeProducts = storeProductsResult.products;
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+);
 
 const donateCta = {
   title: cmsText(
@@ -269,7 +293,7 @@ const donateCta = {
     "https://www.paypal.com/donate/?hosted_button_id=47BPT2WKXDFCN",
   ),
   secondaryCtaLabel: cmsText(donateContent?.secondaryCtaLabel, "Shop the Marketplace"),
-  secondaryCtaUrl: cmsText(donateContent?.secondaryCtaUrl, "#shop"),
+  secondaryCtaUrl: localizeInternalUrl(cmsText(donateContent?.secondaryCtaUrl, "/shop")),
 };
 ---
 <BaseLayout title="U COUNT — Fight Human Trafficking" site={site} activePage="home">
@@ -1400,7 +1424,7 @@ const donateCta = {
           </h2>
           <p class="text-neutral-500 text-lg mt-3 max-w-lg">Every purchase supports women who are at-risk or survivors — strengthening dignity, community, and renewed hope for a brighter future.</p>
         </div>
-        <a href={storeProductsResult.allProductsUrl} target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
+        <a href={storeProductsResult.allProductsUrl} class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
           View All Products
           <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>
@@ -1408,10 +1432,23 @@ const donateCta = {
 
       <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
         {storeProducts.length ? (
-          storeProducts.map((product) => (
-            <a href={product.url} target="_blank" rel="noopener noreferrer" class="product-card group block no-underline">
-              <div class="aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
-                <img src={product.image} alt={product.imageAlt} class="w-full h-full object-cover">
+          storeProducts.map((product, index) => (
+            <a href={product.url} class="product-card group block no-underline">
+              <div class="relative aspect-[4/5] rounded-2xl overflow-hidden mb-4 bg-neutral-100">
+                <img
+                  src={product.image}
+                  srcset={product.imageSrcSet}
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  alt={product.imageAlt}
+                  class="w-full h-full object-cover"
+                  loading={index < 3 ? "eager" : "lazy"}
+                  decoding="async"
+                >
+                {product.ribbon && (
+                  <span class="absolute left-0 top-5 bg-ember-brand px-4 py-1.5 text-xs font-bold text-white shadow-sm shadow-ember-brand/20">
+                    {product.ribbon}
+                  </span>
+                )}
               </div>
               <div class="flex items-start justify-between gap-3">
                 <div>

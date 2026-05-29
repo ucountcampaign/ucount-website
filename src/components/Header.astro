@@ -1,7 +1,7 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 
-type ActivePage = "home" | "about" | "contact";
+type ActivePage = "home" | "about" | "contact" | "shop";
 
 const { site, activePage } = Astro.props as {
   site: ResolvedSiteSettings;
@@ -13,7 +13,7 @@ const navItems = [
   { label: "Mission", href: homeHref("#mission") },
   { label: "Impact", href: homeHref("#impact") },
   { label: "Partners", href: homeHref("#partners") },
-  { label: "Shop", href: homeHref("#shop") },
+  { label: "Shop", href: "/shop", page: "shop" },
   { label: "About", href: "/about", page: "about" },
   { label: "Contact", href: "/contact", page: "contact" },
 ];
