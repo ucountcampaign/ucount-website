@@ -1,0 +1,708 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  getPageSection,
+  getSiteSettings,
+  resolveSiteSettings,
+  cmsText,
+} from "../lib/wix-cms";
+import { getStorefrontProducts } from "../lib/wix-store";
+
+const [siteSettings, heroContent, freedomContent, storeProductsResult] =
+  await Promise.all([
+    getSiteSettings(),
+    getPageSection("shop", "hero"),
+    getPageSection("shop", "freedom-supply-chain"),
+    getStorefrontProducts(),
+  ]);
+
+const site = resolveSiteSettings(siteSettings);
+const products = storeProductsResult.products;
+const collections = storeProductsResult.collections ?? [];
+const productPrices = products
+  .map((product) => product.priceValue)
+  .filter((price): price is number => typeof price === "number");
+const minPrice = productPrices.length ? Math.floor(Math.min(...productPrices)) : 0;
+const maxPrice = productPrices.length ? Math.ceil(Math.max(...productPrices)) : 0;
+const productsPerPage = 16;
+const visibleProductCount = Math.min(productsPerPage, products.length);
+const sortOptions = [
+  { value: "featured", label: "Featured" },
+  { value: "name", label: "Name" },
+  { value: "price-low", label: "Price: Low" },
+  { value: "price-high", label: "Price: High" },
+];
+
+const hero = {
+  eyebrow: cmsText(heroContent?.eyebrow, "Marketplace"),
+  title: cmsText(heroContent?.title, "Shop with purpose."),
+  body: cmsText(
+    heroContent?.body,
+    "U COUNT Marketplace empowers survivors of human trafficking by providing economic opportunity through handmade products. Every purchase supports alternative and sustainable income with dignity and hope.",
+  ),
+};
+
+function toVideoEmbedUrl(input: string): string {
+  const url = input.trim();
+
+  if (!url) {
+    return "";
+  }
+
+  const vimeoParams = "title=0&byline=0&portrait=0&dnt=1";
+
+  if (/^\d+$/.test(url)) {
+    return `https://player.vimeo.com/video/${url}?${vimeoParams}`;
+  }
+
+  if (/player\.vimeo\.com\/video\//i.test(url) || /youtube(?:-nocookie)?\.com\/embed\//i.test(url)) {
+    return url;
+  }
+
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}?${vimeoParams}`;
+  }
+
+  const youtubeMatch = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{6,})/i,
+  );
+  if (youtubeMatch) {
+    return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+  }
+
+  return url;
+}
+
+const freedom = {
+  eyebrow: cmsText(freedomContent?.eyebrow, "Freedom Supply Chain"),
+  title: cmsText(freedomContent?.title, "Two organizations, one mission for freedom."),
+  body: cmsText(
+    freedomContent?.body,
+    "The Freedom Supply Chain is a partnership between U COUNT and Beauty REnewed (bRE), LLC, built to create a sustainable supply chain and sales outlets for those affected by human trafficking. U COUNT, a 501(c)(3) funded by donations and product sales, uses insight from bRE to source goods, while Beauty REnewed develops the products and visits each site to procure raw goods, refine the designs, and support the women who make them.",
+  ),
+  caption: cmsText(
+    freedomContent?.subtitle,
+    "U COUNT funds and orders goods from sites employing women at risk of, or surviving, trafficking. Beauty REnewed develops the products and works directly with each site.",
+  ),
+  videoEmbedUrl: toVideoEmbedUrl(cmsText(freedomContent?.videoUrl, "432015030")),
+  ctaLabel: cmsText(freedomContent?.primaryCtaLabel, "Shop at bRE"),
+  ctaUrl: cmsText(freedomContent?.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
+};
+
+Astro.response.headers.set(
+  "Cache-Control",
+  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
+);
+---
+
+<BaseLayout title="Marketplace — U COUNT" site={site} activePage="shop">
+  <section class="bg-ember-50/40 pt-28 pb-12 lg:pt-36 lg:pb-16">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="max-w-3xl">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">{hero.eyebrow}</span>
+        </div>
+        <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-6xl text-neutral-900 tracking-tight mb-5">
+          {hero.title}
+        </h1>
+        <p class="text-lg text-neutral-600 leading-relaxed">
+          {hero.body}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-12 lg:py-16">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="flex flex-col gap-5 border-b border-neutral-200 pb-8 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-500">Catalog</p>
+          <p class="mt-2 text-sm text-neutral-500">
+            {products.length === 1 ? "1 marketplace item" : `${products.length} marketplace items`} ready to browse
+          </p>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-[minmax(0,18rem)_12rem]">
+          <label class="sr-only" for="productSearch">Search products</label>
+          <input
+            id="productSearch"
+            type="search"
+            placeholder="Search products"
+            class="ui-input h-11 rounded-full"
+          />
+
+          <div class="relative" data-custom-select>
+            <label class="sr-only" id="productSortLabel">Sort products</label>
+            <input id="productSort" type="hidden" value="featured" data-custom-select-input />
+            <button
+              type="button"
+              class="ui-select-trigger h-11 rounded-full"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-labelledby="productSortLabel productSortValue"
+              data-custom-select-trigger
+            >
+              <span id="productSortValue" data-custom-select-value>Featured</span>
+              <svg class="h-4 w-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="ui-select-menu" role="listbox" aria-labelledby="productSortLabel" hidden data-custom-select-menu>
+              {sortOptions.map((option) => (
+                <button
+                  type="button"
+                  role="option"
+                  class="ui-select-option"
+                  data-custom-select-option
+                  data-value={option.value}
+                  aria-selected={option.value === "featured" ? "true" : "false"}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] lg:items-start">
+        <div class="flex flex-wrap gap-2" data-category-filter>
+          <button type="button" data-category="all" aria-pressed="true" class="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition-colors">
+            All
+          </button>
+          {collections.map((collection) => (
+            <button type="button" data-category={collection.id} aria-pressed="false" class="rounded-full border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-600 transition-colors hover:border-ember-brand hover:text-ember-700">
+              {collection.name}
+            </button>
+          ))}
+        </div>
+
+        <div class="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-4">
+            <label for="priceMax" class="text-sm font-semibold text-neutral-800">Price</label>
+            <span class="text-sm font-medium text-neutral-500" id="priceRangeLabel">
+              ${minPrice} - ${maxPrice}
+            </span>
+          </div>
+          <div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+            <label class="sr-only" for="priceMin">Minimum price</label>
+            <input
+              id="priceMin"
+              class="ui-input h-10 rounded-xl"
+              type="number"
+              inputmode="numeric"
+              min={minPrice}
+              max={maxPrice}
+              value={minPrice}
+              data-price-min
+            />
+            <span class="text-neutral-300">to</span>
+            <label class="sr-only" for="priceMax">Maximum price</label>
+            <input
+              id="priceMax"
+              class="ui-input h-10 rounded-xl"
+              type="number"
+              inputmode="numeric"
+              min={minPrice}
+              max={maxPrice}
+              value={maxPrice}
+              data-price-max
+            />
+          </div>
+          <div class="price-range mt-4" data-price-range>
+            <div class="price-range-track" aria-hidden="true"></div>
+            <div class="price-range-fill" aria-hidden="true"></div>
+            <input
+              class="price-range-input"
+              id="priceMinRange"
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              value={minPrice}
+              data-price-min-range
+              aria-label="Minimum price"
+            />
+            <input
+              class="price-range-input"
+              id="priceMaxRange"
+              type="range"
+              min={minPrice}
+              max={maxPrice}
+              value={maxPrice}
+              data-price-max-range
+              aria-label="Maximum price"
+            />
+          </div>
+        </div>
+      </div>
+
+      {products.length ? (
+        <>
+        <div class="mt-10 flex flex-col gap-3 border-t border-neutral-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-neutral-500" id="productResultSummary" aria-live="polite">
+            Showing {visibleProductCount} of {products.length} marketplace items
+          </p>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">
+            Page <span id="productCurrentPage">1</span>
+          </p>
+        </div>
+
+        <div id="productGrid" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {products.map((product, index) => (
+            <article
+              data-product-card
+              data-index={index}
+              data-name={product.name.toLowerCase()}
+              data-price={product.priceValue ?? ""}
+              data-stock={product.inStock ? "in" : "out"}
+              data-categories={product.collectionIds.join(" ")}
+              data-ribbon={product.ribbon.toLowerCase()}
+              hidden={index >= productsPerPage}
+              class="group"
+            >
+              <a href={product.url} class="block no-underline">
+                <div class="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
+                  <img
+                    src={product.image}
+                    srcset={product.imageSrcSet}
+                    sizes="(min-width: 1280px) 25vw, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    alt={product.imageAlt}
+                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                    loading={index < 4 ? "eager" : "lazy"}
+                    fetchpriority={index === 0 ? "high" : "auto"}
+                    decoding="async"
+                  />
+                  {product.ribbon && (
+                    <span class="absolute left-0 top-5 bg-ember-brand px-4 py-1.5 text-xs font-bold text-white shadow-sm shadow-ember-brand/20">
+                      {product.ribbon}
+                    </span>
+                  )}
+                  {!product.inStock && (
+                    <span class={`absolute ${product.ribbon ? "left-3 top-14" : "left-3 top-3"} rounded-full bg-white/95 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-neutral-700 shadow-sm`}>
+                      Out of stock
+                    </span>
+                  )}
+                </div>
+                <div class="mt-4 flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    {product.categoryNames[0] && (
+                      <p class="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-400">{product.categoryNames[0]}</p>
+                    )}
+                    <h2 class="font-display text-lg font-semibold leading-tight text-neutral-900 transition-colors group-hover:text-ember-brand">{product.name}</h2>
+                    {product.description && (
+                      <p class="mt-1 line-clamp-2 text-sm leading-relaxed text-neutral-500">{product.description}</p>
+                    )}
+                  </div>
+                  {product.price && (
+                    <p class="shrink-0 font-display text-lg font-bold text-ember-brand">{product.price}</p>
+                  )}
+                </div>
+              </a>
+            </article>
+          ))}
+        </div>
+
+        <div id="productEmptyState" class="mt-10 rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center" hidden>
+          <p class="font-display text-xl font-semibold text-neutral-900">No products match those filters.</p>
+          <p class="mt-2 text-sm text-neutral-500">Try a different category, search, or price range.</p>
+        </div>
+
+        <nav id="productPagination" class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Product pagination">
+          <button type="button" class="ui-page-button" data-page-prev>Previous</button>
+          <div class="flex flex-wrap justify-center gap-2" data-page-numbers></div>
+          <button type="button" class="ui-page-button" data-page-next>Next</button>
+        </nav>
+        </>
+      ) : (
+        <div class="mt-10 rounded-2xl border border-neutral-200 bg-neutral-50 px-6 py-12 text-center">
+          <p class="text-neutral-500">Marketplace products are unavailable right now.</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <section class="relative overflow-hidden bg-ember-50/40 py-16 lg:py-24">
+    <div class="absolute -right-24 top-24 hidden h-72 w-72 rounded-full bg-ember-brand/5 blur-3xl lg:block" aria-hidden="true"></div>
+    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
+      <div class="mx-auto max-w-3xl text-center">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-12 h-px bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.eyebrow}</span>
+          <div class="w-12 h-px bg-ember-brand"></div>
+        </div>
+        <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-4xl">{freedom.title}</h2>
+        <p class="mt-5 text-neutral-600 leading-relaxed">{freedom.body}</p>
+      </div>
+
+      <div class="mt-12 grid gap-8 lg:mt-16 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch lg:gap-10">
+        <div class="overflow-hidden rounded-3xl border border-ember-100 bg-neutral-900 shadow-xl shadow-ember-brand/10">
+          <div class="relative aspect-video">
+            <iframe
+              class="absolute inset-0 h-full w-full"
+              src={freedom.videoEmbedUrl}
+              title="The Freedom Supply Chain — U COUNT & Beauty REnewed"
+              loading="lazy"
+              frameborder="0"
+              allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+              allowfullscreen
+            ></iframe>
+          </div>
+        </div>
+
+        <div class="flex flex-col rounded-3xl border border-ember-100 bg-white/80 p-8 shadow-xl shadow-ember-brand/10 backdrop-blur-sm">
+          <p class="text-center text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">A partnership</p>
+          <div class="mt-7 flex items-center justify-center gap-5 sm:gap-7">
+            <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT — Fight Human Trafficking" class="h-12 w-auto sm:h-14" loading="lazy" decoding="async" />
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ember-brand text-white shadow-md shadow-ember-brand/30" aria-hidden="true">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <img src="/assets/bre-logo.png" alt="Beauty REnewed" class="h-20 w-20 object-contain sm:h-24 sm:w-24" loading="lazy" decoding="async" />
+          </div>
+          <p class="mt-7 text-center text-sm leading-relaxed text-neutral-500">
+            {freedom.caption}
+          </p>
+          <a
+            href={freedom.ctaUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-auto flex w-full items-center justify-center gap-2 rounded-full bg-ember-brand px-6 py-3 font-display font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500"
+          >
+            {freedom.ctaLabel}
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script define:vars={{ productsPerPage, minPrice, maxPrice }}>
+    const grid = document.getElementById("productGrid");
+    const cards = Array.from(document.querySelectorAll("[data-product-card]"));
+    const search = document.getElementById("productSearch");
+    const sort = document.getElementById("productSort");
+    const categoryButtons = Array.from(document.querySelectorAll("[data-category]"));
+    const minPriceInput = document.querySelector("[data-price-min]");
+    const maxPriceInput = document.querySelector("[data-price-max]");
+    const minPriceRange = document.querySelector("[data-price-min-range]");
+    const maxPriceRange = document.querySelector("[data-price-max-range]");
+    const priceRange = document.querySelector("[data-price-range]");
+    const priceRangeLabel = document.getElementById("priceRangeLabel");
+    const resultSummary = document.getElementById("productResultSummary");
+    const currentPageLabel = document.getElementById("productCurrentPage");
+    const emptyState = document.getElementById("productEmptyState");
+    const pagination = document.getElementById("productPagination");
+    const pageNumbers = document.querySelector("[data-page-numbers]");
+    const previousPageButton = document.querySelector("[data-page-prev]");
+    const nextPageButton = document.querySelector("[data-page-next]");
+    let activeCategory = "all";
+    let currentPage = 1;
+
+    const activeClass = ["bg-neutral-900", "text-white"];
+    const inactiveClass = ["border", "border-neutral-200", "bg-white", "text-neutral-600"];
+
+    function initCustomSelects() {
+      document.querySelectorAll("[data-custom-select]").forEach((select) => {
+        const trigger = select.querySelector("[data-custom-select-trigger]");
+        const menu = select.querySelector("[data-custom-select-menu]");
+        const input = select.querySelector("[data-custom-select-input]");
+        const valueLabel = select.querySelector("[data-custom-select-value]");
+        const options = Array.from(select.querySelectorAll("[data-custom-select-option]"));
+
+        if (!trigger || !menu || !input || !valueLabel) {
+          return;
+        }
+
+        function closeMenu() {
+          menu.hidden = true;
+          trigger.setAttribute("aria-expanded", "false");
+        }
+
+        function openMenu() {
+          menu.hidden = false;
+          trigger.setAttribute("aria-expanded", "true");
+        }
+
+        trigger.addEventListener("click", () => {
+          if (menu.hidden) {
+            openMenu();
+          } else {
+            closeMenu();
+          }
+        });
+
+        options.forEach((option) => {
+          option.addEventListener("click", () => {
+            if (option.disabled) {
+              return;
+            }
+
+            input.value = option.dataset.value ?? "";
+            valueLabel.textContent = option.textContent?.trim() ?? "";
+            options.forEach((item) => {
+              item.setAttribute("aria-selected", String(item === option));
+            });
+            closeMenu();
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+          });
+        });
+
+        document.addEventListener("click", (event) => {
+          if (!event.target || !select.contains(event.target)) {
+            closeMenu();
+          }
+        });
+
+        select.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            closeMenu();
+            trigger.focus();
+          }
+        });
+      });
+    }
+
+    function setActiveCategoryButton() {
+      categoryButtons.forEach((button) => {
+        const isActive = button.dataset.category === activeCategory;
+        button.setAttribute("aria-pressed", String(isActive));
+        button.classList.toggle("border", !isActive);
+        activeClass.forEach((className) => button.classList.toggle(className, isActive));
+        inactiveClass.forEach((className) => button.classList.toggle(className, !isActive));
+      });
+    }
+
+    function matchesCategory(card) {
+      return activeCategory === "all" || card.dataset.categories?.split(" ").includes(activeCategory);
+    }
+
+    function matchesSearch(card) {
+      const value = search?.value.trim().toLowerCase() ?? "";
+
+      return !value || card.dataset.name?.includes(value);
+    }
+
+    function clampPrice(value, fallback) {
+      const parsed = Number.parseFloat(value);
+
+      if (!Number.isFinite(parsed)) {
+        return fallback;
+      }
+
+      return Math.min(maxPrice, Math.max(minPrice, parsed));
+    }
+
+    function getPriceBounds() {
+      let lower = clampPrice(minPriceInput?.value ?? "", minPrice);
+      let upper = clampPrice(maxPriceInput?.value ?? "", maxPrice);
+
+      if (lower > upper) {
+        lower = upper;
+      }
+
+      return { lower, upper };
+    }
+
+    function syncPriceControls(source) {
+      if (!minPriceInput || !maxPriceInput || !minPriceRange || !maxPriceRange) {
+        return;
+      }
+
+      if (source === "min-range") {
+        minPriceInput.value = minPriceRange.value;
+      }
+
+      if (source === "max-range") {
+        maxPriceInput.value = maxPriceRange.value;
+      }
+
+      let lower = clampPrice(minPriceInput.value, minPrice);
+      let upper = clampPrice(maxPriceInput.value, maxPrice);
+
+      if (lower > upper) {
+        if (source === "min" || source === "min-range") {
+          upper = lower;
+        } else {
+          lower = upper;
+        }
+      }
+
+      minPriceInput.value = String(lower);
+      maxPriceInput.value = String(upper);
+      minPriceRange.value = String(lower);
+      maxPriceRange.value = String(upper);
+
+      if (priceRangeLabel) {
+        priceRangeLabel.textContent = `$${lower} - $${upper}`;
+      }
+
+      if (priceRange) {
+        const span = Math.max(1, maxPrice - minPrice);
+        const lowerPercent = ((lower - minPrice) / span) * 100;
+        const upperPercent = ((upper - minPrice) / span) * 100;
+        priceRange.style.setProperty("--price-lower", `${lowerPercent}%`);
+        priceRange.style.setProperty("--price-upper", `${upperPercent}%`);
+      }
+    }
+
+    function matchesPrice(card) {
+      const price = Number.parseFloat(card.dataset.price || "");
+
+      if (!Number.isFinite(price)) {
+        return true;
+      }
+
+      const { lower, upper } = getPriceBounds();
+
+      return price >= lower && price <= upper;
+    }
+
+    function getFilteredCards(sourceCards = cards) {
+      return sourceCards.filter(
+        (card) => matchesCategory(card) && matchesSearch(card) && matchesPrice(card),
+      );
+    }
+
+    function getSortedCards() {
+      if (!sort) {
+        return [...cards];
+      }
+
+      return [...cards].sort((a, b) => {
+        if (sort.value === "name") {
+          return (a.dataset.name ?? "").localeCompare(b.dataset.name ?? "");
+        }
+
+        if (sort.value === "price-low" || sort.value === "price-high") {
+          const aPrice = Number.parseFloat(a.dataset.price || "0");
+          const bPrice = Number.parseFloat(b.dataset.price || "0");
+          return sort.value === "price-low" ? aPrice - bPrice : bPrice - aPrice;
+        }
+
+        return Number(a.dataset.index) - Number(b.dataset.index);
+      });
+    }
+
+    function sortCards(sorted) {
+      if (!grid) {
+        return;
+      }
+
+      sorted.forEach((card) => grid.appendChild(card));
+    }
+
+    function renderPagination(totalItems) {
+      if (!pagination || !pageNumbers || !previousPageButton || !nextPageButton) {
+        return;
+      }
+
+      const totalPages = Math.max(1, Math.ceil(totalItems / productsPerPage));
+      pagination.hidden = totalItems <= productsPerPage;
+      previousPageButton.disabled = currentPage <= 1;
+      nextPageButton.disabled = currentPage >= totalPages;
+      pageNumbers.replaceChildren();
+
+      for (let page = 1; page <= totalPages; page += 1) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `ui-page-button ${page === currentPage ? "is-active" : ""}`;
+        button.textContent = String(page);
+        button.setAttribute("aria-label", `Page ${page}`);
+        button.setAttribute("aria-current", page === currentPage ? "page" : "false");
+        button.addEventListener("click", () => {
+          currentPage = page;
+          applyFilters();
+        });
+        pageNumbers.appendChild(button);
+      }
+    }
+
+    function applyFilters() {
+      const sortedCards = getSortedCards();
+      sortCards(sortedCards);
+      const filteredCards = getFilteredCards(sortedCards);
+      const totalPages = Math.max(1, Math.ceil(filteredCards.length / productsPerPage));
+
+      if (currentPage > totalPages) {
+        currentPage = totalPages;
+      }
+
+      const pageStart = (currentPage - 1) * productsPerPage;
+      const pageEnd = pageStart + productsPerPage;
+      const visibleCards = new Set(filteredCards.slice(pageStart, pageEnd));
+
+      cards.forEach((card) => {
+        card.hidden = !visibleCards.has(card);
+      });
+
+      if (resultSummary) {
+        const visibleStart = filteredCards.length ? pageStart + 1 : 0;
+        const visibleEnd = Math.min(pageEnd, filteredCards.length);
+        resultSummary.textContent =
+          filteredCards.length === 0
+            ? "No marketplace items match those filters"
+            : `Showing ${visibleStart}-${visibleEnd} of ${filteredCards.length} marketplace items`;
+      }
+
+      if (currentPageLabel) {
+        currentPageLabel.textContent = String(currentPage);
+      }
+
+      if (emptyState) {
+        emptyState.hidden = filteredCards.length > 0;
+      }
+
+      renderPagination(filteredCards.length);
+    }
+
+    categoryButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeCategory = button.dataset.category ?? "all";
+        currentPage = 1;
+        setActiveCategoryButton();
+        applyFilters();
+      });
+    });
+
+    search?.addEventListener("input", () => {
+      currentPage = 1;
+      applyFilters();
+    });
+    sort?.addEventListener("change", () => {
+      currentPage = 1;
+      applyFilters();
+    });
+    minPriceInput?.addEventListener("input", () => {
+      syncPriceControls("min");
+      currentPage = 1;
+      applyFilters();
+    });
+    maxPriceInput?.addEventListener("input", () => {
+      syncPriceControls("max");
+      currentPage = 1;
+      applyFilters();
+    });
+    maxPriceRange?.addEventListener("input", () => {
+      syncPriceControls("max-range");
+      currentPage = 1;
+      applyFilters();
+    });
+    minPriceRange?.addEventListener("input", () => {
+      syncPriceControls("min-range");
+      currentPage = 1;
+      applyFilters();
+    });
+    previousPageButton?.addEventListener("click", () => {
+      currentPage = Math.max(1, currentPage - 1);
+      applyFilters();
+    });
+    nextPageButton?.addEventListener("click", () => {
+      const totalPages = Math.max(1, Math.ceil(getFilteredCards().length / productsPerPage));
+      currentPage = Math.min(totalPages, currentPage + 1);
+      applyFilters();
+    });
+
+    initCustomSelects();
+    syncPriceControls();
+    applyFilters();
+  </script>
+</BaseLayout>

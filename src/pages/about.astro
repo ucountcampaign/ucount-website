@@ -237,7 +237,7 @@ const accentClass = (token: string) =>
 
   <script>
     document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
-      const button = toggle as HTMLButtonElement;
+      const button = toggle;
       const card = button.closest("[data-team-card]");
       const panelId = button.getAttribute("aria-controls");
       const panel = panelId ? document.getElementById(panelId) : null;
