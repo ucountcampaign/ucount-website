@@ -5,14 +5,38 @@ type ContactSubmission = {
   message: string;
 };
 
-function requiredEnv(name: string): string {
+type ContactConfig = {
+  apiKey: string;
+  formId: string;
+  siteId: string;
+};
+
+export class ContactFormConfigError extends Error {
+  readonly missingVariables: string[];
+
+  constructor(missingVariables: string[]) {
+    super(`Contact form is missing required configuration: ${missingVariables.join(", ")}.`);
+    this.name = "ContactFormConfigError";
+    this.missingVariables = missingVariables;
+  }
+}
+
+export class WixContactSubmissionError extends Error {
+  readonly status: number;
+  readonly responseBody: string;
+
+  constructor(status: number, message: string, responseBody: string) {
+    super(message);
+    this.name = "WixContactSubmissionError";
+    this.status = status;
+    this.responseBody = responseBody;
+  }
+}
+
+function envValue(name: string): string {
   const value = import.meta.env[name];
 
-  if (!value) {
-    throw new Error(`${name} is not set.`);
-  }
-
-  return value;
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function contactFieldMap() {
@@ -24,10 +48,42 @@ function contactFieldMap() {
   };
 }
 
+function getContactConfig(): ContactConfig {
+  const config = {
+    apiKey: envValue("WIX_FORMS_API_KEY"),
+    formId: envValue("WIX_CONTACT_FORM_ID"),
+    siteId: envValue("WIX_SITE_ID"),
+  };
+  const missingVariables = [
+    ["WIX_FORMS_API_KEY", config.apiKey],
+    ["WIX_CONTACT_FORM_ID", config.formId],
+    ["WIX_SITE_ID", config.siteId],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missingVariables.length > 0) {
+    throw new ContactFormConfigError(missingVariables);
+  }
+
+  return config;
+}
+
+export function isWixContactFormConfigured(): boolean {
+  try {
+    getContactConfig();
+    return true;
+  } catch (error) {
+    if (error instanceof ContactFormConfigError) {
+      return false;
+    }
+
+    throw error;
+  }
+}
+
 export async function submitWixContactForm(submission: ContactSubmission) {
-  const formId = requiredEnv("WIX_CONTACT_FORM_ID");
-  const apiKey = requiredEnv("WIX_API_KEY");
-  const siteId = requiredEnv("WIX_SITE_ID");
+  const { apiKey, formId, siteId } = getContactConfig();
   const fields = contactFieldMap();
 
   const response = await fetch(
@@ -64,6 +120,6 @@ export async function submitWixContactForm(submission: ContactSubmission) {
       // Keep the status-based message when Wix returns a non-JSON error body.
     }
 
-    throw new Error(message);
+    throw new WixContactSubmissionError(response.status, message, text);
   }
 }

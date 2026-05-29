@@ -1,5 +1,9 @@
 import type { APIRoute } from "astro";
-import { submitWixContactForm } from "../../lib/wix-contact";
+import {
+  ContactFormConfigError,
+  WixContactSubmissionError,
+  submitWixContactForm,
+} from "../../lib/wix-contact";
 
 function getString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -20,7 +24,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const email = getString(formData, "email");
   const message = getString(formData, "message");
 
-  if (!firstName || !lastName || !email || !message) {
+  if (!firstName || !email || !message) {
     return redirect("/contact?status=missing", 303);
   }
 
@@ -28,6 +32,23 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     await submitWixContactForm({ firstName, lastName, email, message });
     return redirect("/contact?status=sent", 303);
   } catch (error) {
+    if (error instanceof ContactFormConfigError) {
+      console.error("Contact form is not configured", {
+        missingVariables: error.missingVariables,
+      });
+
+      return redirect("/contact?status=unavailable", 303);
+    }
+
+    if (error instanceof WixContactSubmissionError) {
+      console.error("Wix rejected the contact form submission", {
+        status: error.status,
+        message: error.message,
+      });
+
+      return redirect("/contact?status=error", 303);
+    }
+
     console.error("Failed to submit Wix contact form", error);
     return redirect("/contact?status=error", 303);
   }

@@ -1,4 +1,4 @@
-import { createClient, OAuthStrategy } from "@wix/sdk";
+import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import * as items from "@wix/wix-data-items-sdk";
 
 type CmsRecord = Record<string, unknown>;
@@ -197,27 +197,30 @@ function resolveCollectionId(collectionId: string): string {
 }
 
 function createWixDataClient() {
-  const clientId = import.meta.env.WIX_CLIENT_ID;
+  const apiKey = import.meta.env.WIX_DATA_API_KEY;
+  const siteId = import.meta.env.WIX_SITE_ID;
 
-  if (!clientId) {
+  if (!apiKey || !siteId) {
     return null;
   }
 
   return createClient({
     modules: { items },
-    auth: OAuthStrategy({ clientId }),
+    auth: ApiKeyStrategy({ apiKey, siteId }),
   });
 }
 
 let wixDataClient: ReturnType<typeof createWixDataClient> | undefined;
-let missingClientIdWarningShown = false;
+let missingDataCredentialsWarningShown = false;
 
 function getWixDataClient() {
   wixDataClient ??= createWixDataClient();
 
-  if (!wixDataClient && !missingClientIdWarningShown) {
-    missingClientIdWarningShown = true;
-    console.warn("WIX_CLIENT_ID is not set; CMS content will use local fallbacks.");
+  if (!wixDataClient && !missingDataCredentialsWarningShown) {
+    missingDataCredentialsWarningShown = true;
+    console.warn(
+      "WIX_DATA_API_KEY or WIX_SITE_ID is not set; CMS content will use local fallbacks.",
+    );
   }
 
   return wixDataClient;
