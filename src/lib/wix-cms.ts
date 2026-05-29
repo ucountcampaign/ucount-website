@@ -15,6 +15,7 @@ export type PageContent = {
   primaryCtaUrl?: string | null;
   secondaryCtaLabel?: string | null;
   secondaryCtaUrl?: string | null;
+  videoUrl?: string | null;
   image?: string | null;
   mobileImage?: string | null;
   backgroundImage?: string | null;
