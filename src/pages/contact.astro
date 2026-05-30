@@ -7,6 +7,7 @@ import {
   resolveSiteSettings,
 } from "../lib/wix-cms";
 import { isWixContactFormConfigured } from "../lib/wix-contact";
+import { breadcrumbSchema, truncateDescription } from "../lib/seo";
 
 const [siteSettings, heroContent] = await Promise.all([
   getSiteSettings(),
@@ -28,8 +29,28 @@ const isContactFormConfigured = isWixContactFormConfigured();
 const hasContactStatus = ["sent", "missing", "error", "unavailable"].includes(status ?? "");
 const shouldShowContactUnavailable =
   status === "unavailable" || (!isContactFormConfigured && !hasContactStatus);
+
+const contactDescription = truncateDescription(hero.body);
 ---
-<BaseLayout title="Contact — U COUNT Campaign" site={site} activePage="contact">
+<BaseLayout
+  title="Contact — U COUNT Campaign"
+  site={site}
+  activePage="contact"
+  meta={{
+    description: contactDescription,
+    canonicalPath: "/contact",
+    schemaType: "ContactPage",
+    image: "/assets/ucount-logo.jpg",
+    imageAlt: "U COUNT logo",
+    keywords: ["contact U COUNT", "volunteer anti-trafficking", "Fort Collins nonprofit"],
+  }}
+  structuredData={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Contact", path: "/contact" },
+    ]),
+  ]}
+>
   <!-- ===== PAGE HERO ===== -->
   <section class="bg-neutral-50 pt-28 lg:pt-32 pb-12 lg:pb-16">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center">

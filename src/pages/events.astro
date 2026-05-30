@@ -11,6 +11,11 @@ import {
   type EventAccent,
   type EventItem,
 } from "../lib/wix-events";
+import {
+  breadcrumbSchema,
+  eventItemListSchema,
+  truncateDescription,
+} from "../lib/seo";
 
 const [siteSettings, heroContent, eventsResult] = await Promise.all([
   getSiteSettings(),
@@ -27,6 +32,7 @@ const hero = {
     "Shop the Marketplace, join community education, and stay connected to opportunities that help prevent trafficking and restore dignity.",
   ),
 };
+const eventsDescription = truncateDescription(hero.body);
 
 const upcomingEvents = eventsResult.upcomingEvents;
 const pastEvents = eventsResult.pastEvents;
@@ -71,7 +77,31 @@ Astro.response.headers.set(
 );
 ---
 
-<BaseLayout title="Events - U COUNT" site={site} activePage="events">
+<BaseLayout
+  title="Events — U COUNT"
+  site={site}
+  activePage="events"
+  meta={{
+    description: eventsDescription,
+    canonicalPath: "/events",
+    schemaType: "CollectionPage",
+    image: "/assets/photos/IMG_4722.jpg",
+    imageAlt: "U COUNT community event",
+    keywords: [
+      "U COUNT events",
+      "anti-trafficking events",
+      "Fort Collins volunteer events",
+      "marketplace boutique",
+    ],
+  }}
+  structuredData={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Events", path: "/events" },
+    ]),
+    eventItemListSchema(eventsResult.allEvents),
+  ]}
+>
   <section class="relative min-h-[34rem] overflow-hidden pt-32 pb-20 text-white lg:pt-40">
     <img
       src="/assets/photos/IMG_4722.jpg"

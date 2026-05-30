@@ -3,6 +3,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import SocialIcon from "../../components/SocialIcon.astro";
 import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getEventBySlug, getEvents } from "../../lib/wix-events";
+import {
+  breadcrumbSchema,
+  eventSchema,
+  truncateDescription,
+} from "../../lib/seo";
 
 const [siteSettings, event, eventsResult] = await Promise.all([
   getSiteSettings(),
@@ -75,7 +80,7 @@ const shareImage = wixMediaMatch
       height: undefined as number | undefined,
     };
 const shareImageUrl = shareImage.url;
-const metaDescription = event.summary || event.description;
+const metaDescription = truncateDescription(event.summary || event.description);
 const shareLinks = [
   {
     label: "Share on Facebook",
@@ -112,25 +117,36 @@ const eventFocus = (
 };
 ---
 
-<BaseLayout title={`${event.title} - U COUNT`} site={site} activePage="events">
+<BaseLayout
+  title={`${event.title} — U COUNT`}
+  site={site}
+  activePage="events"
+  meta={{
+    description: metaDescription,
+    canonicalPath: event.detailHref,
+    image: shareImageUrl,
+    imageAlt: event.imageAlt,
+    schemaType: "ItemPage",
+    keywords: [
+      event.title,
+      "U COUNT event",
+      "anti-trafficking event",
+      event.eyebrow,
+      event.locationLabel,
+    ],
+  }}
+  structuredData={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Events", path: "/events" },
+      { name: event.title, path: event.detailHref },
+    ]),
+    eventSchema(event),
+  ]}
+>
   <Fragment slot="head">
-    <link rel="canonical" href={shareUrl} />
-    <meta name="description" content={metaDescription} />
-    <meta property="og:site_name" content="U COUNT" />
-    <meta property="og:title" content={`${event.title} - U COUNT`} />
-    <meta property="og:description" content={metaDescription} />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content={shareUrl} />
-    <meta property="og:image" content={shareImageUrl} />
-    <meta property="og:image:secure_url" content={shareImageUrl} />
-    <meta property="og:image:alt" content={event.imageAlt} />
     {shareImage.width && <meta property="og:image:width" content={String(shareImage.width)} />}
     {shareImage.height && <meta property="og:image:height" content={String(shareImage.height)} />}
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={`${event.title} - U COUNT`} />
-    <meta name="twitter:description" content={metaDescription} />
-    <meta name="twitter:image" content={shareImageUrl} />
-    <meta name="twitter:image:alt" content={event.imageAlt} />
     <script is:inline>
       // Runs in <head> before the body paints. If we arrived here intending to
       // land on the event content, hide the page up front so the user never
