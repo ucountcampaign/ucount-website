@@ -1,5 +1,6 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
+import { getSiteUrl } from "../lib/seo";
 import SocialIcon from "./SocialIcon.astro";
 
 type ActivePage = "home" | "about" | "contact" | "events" | "shop";
@@ -10,6 +11,8 @@ const { site, activePage } = Astro.props as {
 };
 
 const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
+const publicSiteUrl = getSiteUrl(Astro.url.origin);
+const publicSiteHost = new URL(publicSiteUrl).hostname.replace(/^www\./, "");
 ---
 
 <footer class="bg-neutral-900 text-white">
@@ -17,7 +20,15 @@ const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
     <div class="grid lg:grid-cols-4 gap-12 lg:gap-8">
       <div class="lg:col-span-2">
         <div class="flex items-center gap-3 mb-4">
-          <img src="/assets/UCOUNT_logo_lockup_white.png" alt="U COUNT Campaign" class="h-[4.5rem] lg:h-[5.5rem] w-auto">
+          <img
+            src="/assets/UCOUNT_logo_lockup_white.png"
+            alt="U COUNT Campaign"
+            class="h-[4.5rem] w-auto lg:h-[5.5rem]"
+            width="522"
+            height="220"
+            loading="lazy"
+            decoding="async"
+          >
         </div>
         <p class="text-neutral-400 text-sm max-w-sm leading-relaxed mt-4">
           {site.organizationSummary}
@@ -50,7 +61,7 @@ const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
         <h3 class="font-display font-bold text-sm uppercase tracking-wider text-neutral-400 mb-4">Contact</h3>
         <ul class="space-y-2.5">
           <li><a href={`mailto:${site.mainEmail}`} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">{site.mainEmail}</a></li>
-          <li><a href="https://ucountcampaign.org" class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">ucountcampaign.org</a></li>
+          <li><a href={publicSiteUrl} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">{publicSiteHost}</a></li>
         </ul>
       </div>
     </div>

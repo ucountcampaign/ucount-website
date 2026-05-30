@@ -1,8 +1,9 @@
 import type { APIRoute } from "astro";
 import { getSiteSettings, resolveSiteSettings } from "../lib/wix-cms";
-import { SITE_URL } from "../lib/seo";
+import { getSiteUrl } from "../lib/seo";
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
+  const siteUrl = getSiteUrl(url.origin);
   const site = resolveSiteSettings(await getSiteSettings());
   const body = `# ${site.siteName}
 
@@ -11,12 +12,12 @@ export const GET: APIRoute = async () => {
 U COUNT is a Fort Collins, Colorado 501(c)(3) nonprofit fighting human trafficking through prevention, awareness, and restoration.
 
 ## Primary Pages
-- Home: ${SITE_URL}/
-- Marketplace: ${SITE_URL}/shop
-- Events: ${SITE_URL}/events
-- About: ${SITE_URL}/about
-- Contact: ${SITE_URL}/contact
-- Full AI summary: ${SITE_URL}/llms-full.txt
+- Home: ${siteUrl}/
+- Marketplace: ${siteUrl}/shop
+- Events: ${siteUrl}/events
+- About: ${siteUrl}/about
+- Contact: ${siteUrl}/contact
+- Full AI summary: ${siteUrl}/llms-full.txt
 
 ## Key Facts
 - Mission: fight sex trafficking locally and globally through prevention, awareness, and restoration.

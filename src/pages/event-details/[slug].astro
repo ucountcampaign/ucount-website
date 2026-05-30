@@ -6,6 +6,7 @@ import { getEventBySlug, getEvents } from "../../lib/wix-events";
 import {
   breadcrumbSchema,
   eventSchema,
+  getSiteUrl,
   truncateDescription,
 } from "../../lib/seo";
 
@@ -20,6 +21,7 @@ if (!event) {
 }
 
 const site = resolveSiteSettings(siteSettings);
+const siteUrl = getSiteUrl(Astro.url.origin);
 const eventTimestamp = (item: { startDateTime: string }) => {
   const timestamp = new Date(item.startDateTime).getTime();
 
@@ -58,6 +60,14 @@ const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComp
 )}`;
 const shareUrl = new URL(Astro.url.pathname, Astro.url.origin).toString();
 const shareText = `${event.title} - ${event.dateLabel}`;
+const detailImageFrameClass =
+  event.imageLayout === "contain"
+    ? "mt-8 flex justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-2 shadow-sm sm:p-3"
+    : "mt-8 aspect-[16/10] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm";
+const detailImageClass =
+  event.imageLayout === "contain"
+    ? "h-auto max-h-[42rem] max-w-full object-contain"
+    : "h-full w-full object-cover";
 
 // Facebook/LinkedIn need an absolute, correctly-sized image to render a
 // preview card. Wix-hosted media can be transformed on the fly into a
@@ -140,8 +150,8 @@ const eventFocus = (
       { name: "Home", path: "/" },
       { name: "Events", path: "/events" },
       { name: event.title, path: event.detailHref },
-    ]),
-    eventSchema(event),
+    ], siteUrl),
+    eventSchema(event, siteUrl),
   ]}
 >
   <Fragment slot="head">
@@ -191,9 +201,10 @@ const eventFocus = (
   <section class="relative overflow-hidden pt-28 text-white lg:pt-32">
     <img
       src={heroImage}
-      alt=""
+      alt={event.imageAlt}
       class="absolute inset-0 h-full w-full object-cover"
-      aria-hidden="true"
+      fetchpriority="high"
+      decoding="async"
     />
     <div class="absolute inset-0 bg-neutral-950/75"></div>
     <div class="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-950/70 to-ember-900/70"></div>
@@ -240,11 +251,11 @@ const eventFocus = (
         </p>
 
         {shouldShowDetailImage && (
-          <div class="mt-8 aspect-[16/10] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm">
+          <div class={detailImageFrameClass}>
             <img
               src={event.image}
               alt={event.imageAlt}
-              class="h-full w-full object-cover"
+              class={detailImageClass}
               loading="eager"
               decoding="async"
             />

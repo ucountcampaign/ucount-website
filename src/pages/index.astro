@@ -12,6 +12,7 @@ import {
   getSiteSettings,
   resolveSiteSettings,
 } from "../lib/wix-cms";
+import { createWixImageSrcSet, resizeWixImageUrl } from "../lib/images";
 import { truncateDescription } from "../lib/seo";
 
 const [
@@ -60,11 +61,11 @@ const hero = {
   ),
   image: cmsText(
     heroContent?.image,
-    "https://static.wixstatic.com/media/5117f1_7aad5514ad5f47bd8f100fc9b21c13cb~mv2.jpeg/v1/fit/w_960,h_722,q_90/file.jpg",
+    "https://static.wixstatic.com/media/5117f1_7aad5514ad5f47bd8f100fc9b21c13cb~mv2.jpeg/v1/fit/w_960,h_722,q_82,enc_auto/file.jpg",
   ),
   backgroundImage: cmsText(
     heroContent?.backgroundImage,
-    "https://static.wixstatic.com/media/5117f1_83830d03ce464fa0bd4a61c37c37bb5c~mv2.jpeg/v1/fit/w_480,h_360,q_90/file.jpg",
+    "https://static.wixstatic.com/media/5117f1_83830d03ce464fa0bd4a61c37c37bb5c~mv2.jpeg/v1/fill/w_480,h_360,al_c,q_82,enc_auto/file.jpg",
   ),
 };
 
@@ -165,7 +166,7 @@ const defaultPartners = [
   {
     slug: "justice-now",
     name: "Justice Now",
-    logo: "/assets/partners/justice-now-noco-official.png",
+    logo: "/assets/partners/justice-now-noco-official.webp",
     tagline: "Education, care kits, and safe transportation for local victims.",
     description:
       "Local organization educating our community, providing care kits to victims, and facilitating safe transportation for those in need.",
@@ -264,7 +265,7 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
   (partner) => ({
     id: cmsText(partner.slug, cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-")),
     name: cmsText(partner.name, "Partner"),
-    logo: cmsText(partner.logo, "/assets/partners/justice-now-noco-official.png"),
+    logo: cmsText(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
     tagline: cmsText(partner.tagline, ""),
     description: cmsText(partner.description, ""),
     url: cmsText(partner.websiteUrl, "#"),
@@ -273,7 +274,37 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
 const storeProducts = storeProductsResult.products;
-const homeDescription = truncateDescription(hero.body);
+const heroImage = resizeWixImageUrl(hero.image, {
+  width: 960,
+  height: 722,
+  mode: "fit",
+});
+const heroImageSrcSet = createWixImageSrcSet(
+  hero.image,
+  [
+    { width: 640, height: 482 },
+    { width: 800, height: 602 },
+    { width: 960, height: 722 },
+  ],
+  "fit",
+);
+const heroBackgroundImage = resizeWixImageUrl(hero.backgroundImage, {
+  width: 480,
+  height: 360,
+  mode: "fill",
+});
+const heroBackgroundImageSrcSet = createWixImageSrcSet(
+  hero.backgroundImage,
+  [
+    { width: 240, height: 180 },
+    { width: 360, height: 270 },
+    { width: 480, height: 360 },
+  ],
+  "fill",
+);
+const homeDescription = truncateDescription(
+  "U COUNT fights human trafficking with hope, courage, and justice through prevention, awareness, restoration, partners, and a shop-with-purpose marketplace.",
+);
 
 Astro.response.headers.set(
   "Cache-Control",
@@ -299,13 +330,13 @@ const donateCta = {
 };
 ---
 <BaseLayout
-  title="U COUNT — Fight Human Trafficking"
+  title="U COUNT — Hope, Courage & Justice Against Human Trafficking"
   site={site}
   activePage="home"
   meta={{
     description: homeDescription,
     canonicalPath: "/",
-    image: hero.image,
+    image: heroImage,
     imageAlt: "U COUNT anti-trafficking work through prevention, awareness, and restoration",
     keywords: [
       "U COUNT",
@@ -314,6 +345,9 @@ const donateCta = {
       "Fort Collins nonprofit",
       "survivor restoration",
       "ethical marketplace",
+      "shop with purpose",
+      "anti-trafficking partners",
+      "hope courage justice",
     ],
   }}
 >
@@ -1238,7 +1272,7 @@ const donateCta = {
       <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gold-50 rounded-full blur-3xl opacity-40"></div>
       <img
         src="/assets/fingerprint.svg"
-        alt=""
+        alt="Decorative fingerprint mark"
         aria-hidden="true"
         class="fingerprint-mark pointer-events-none absolute right-[-5.5rem] top-[31%] w-[210px] opacity-[0.022] sm:right-[-4.5rem] sm:top-[30%] sm:w-[240px] md:right-[-3.75rem] md:w-[280px] lg:hidden"
       >
@@ -1292,15 +1326,35 @@ const donateCta = {
         <div class="relative">
           <img
             src="/assets/fingerprint.svg"
-            alt=""
+            alt="Decorative fingerprint mark"
             aria-hidden="true"
             class="fingerprint-mark pointer-events-none absolute -right-[35%] top-[80%] z-0 w-[360px] -translate-y-1/2 opacity-[0.06] xl:w-[420px]"
           >
           <div class="relative z-10 rounded-2xl overflow-hidden shadow-2xl shadow-ember-brand/10 rotate-1 hover:rotate-0 transition-transform duration-500">
-            <img src={hero.image} alt="U COUNT Campaign - Fighting Human Trafficking" class="w-full h-auto">
+            <img
+              src={heroImage}
+              srcset={heroImageSrcSet}
+              sizes="(min-width: 1024px) 46vw, 100vw"
+              alt="U COUNT Campaign fighting human trafficking with hope, courage, and justice"
+              class="h-auto w-full"
+              width="960"
+              height="722"
+              fetchpriority="high"
+              decoding="async"
+            >
           </div>
           <div class="absolute -bottom-4 -left-4 z-20 rounded-xl overflow-hidden shadow-xl w-48 border-4 border-white -rotate-3">
-            <img src={hero.backgroundImage} alt="Marketplace products" class="w-full h-auto">
+            <img
+              src={heroBackgroundImage}
+              srcset={heroBackgroundImageSrcSet}
+              sizes="12rem"
+              alt="U COUNT Marketplace products"
+              class="h-auto w-full"
+              width="480"
+              height="360"
+              loading="lazy"
+              decoding="async"
+            >
           </div>
         </div>
       </div>
@@ -1496,7 +1550,7 @@ const donateCta = {
     <div class="absolute inset-0">
       <img
         src="/assets/fingerprint.svg"
-        alt=""
+        alt="Decorative fingerprint mark"
         aria-hidden="true"
         class="pointer-events-none absolute left-1/2 top-1/2 z-0 w-[500px] max-w-none -translate-x-1/2 -translate-y-1/2 opacity-[0.08] lg:w-[560px]"
         style="filter: brightness(0) invert(1);"
@@ -1627,9 +1681,11 @@ const donateCta = {
 
     function applyAccordionWatermarks() {
       partnerStage.querySelectorAll(".partner-accordion-wm-img").forEach((img, index) => {
-        const href = PARTNERS[index]?.logo;
+        const partner = PARTNERS[index];
+        const href = partner?.logo;
         if (href) {
           img.src = href;
+          img.alt = `${partner.name} logo watermark`;
         }
       });
     }
@@ -1671,7 +1727,7 @@ const donateCta = {
           ${PARTNERS.map((partner, index) => `
             <div class="partner-accordion-stack">
               <div class="partner-accordion-wm" aria-hidden="true">
-                <img class="partner-accordion-wm-img" alt="" decoding="async" loading="lazy" />
+                <img class="partner-accordion-wm-img" alt="${partner.name} logo watermark" decoding="async" loading="lazy" />
               </div>
               <details class="partner-accordion-card">
                 <summary class="partner-accordion-summary">

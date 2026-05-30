@@ -2,11 +2,13 @@
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import Cart from "../components/Cart.astro";
+import Analytics from "@vercel/analytics/astro";
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 import {
   absoluteUrl,
   DEFAULT_SOCIAL_IMAGE,
   DEFAULT_SOCIAL_IMAGE_ALT,
+  getSiteUrl,
   organizationSchema,
   safeJsonLd,
   type SeoMeta,
@@ -30,18 +32,20 @@ const description = truncateDescription(
   meta?.description || site.organizationSummary,
 );
 const canonicalPath = meta?.canonicalPath || Astro.url.pathname;
-const canonicalUrl = absoluteUrl(canonicalPath);
-const imageUrl = absoluteUrl(meta?.image || DEFAULT_SOCIAL_IMAGE);
+const siteUrl = getSiteUrl(Astro.url.origin);
+const canonicalUrl = absoluteUrl(canonicalPath, siteUrl);
+const imageUrl = absoluteUrl(meta?.image || DEFAULT_SOCIAL_IMAGE, siteUrl);
 const imageAlt = meta?.imageAlt || DEFAULT_SOCIAL_IMAGE_ALT;
 const robots = meta?.noindex ? "noindex, nofollow" : "index, follow";
 const jsonLd = [
-  organizationSchema(site),
-  websiteSchema(site),
+  organizationSchema(site, siteUrl),
+  websiteSchema(site, siteUrl),
   webPageSchema({
     title,
     description,
     path: canonicalPath,
     schemaType: meta?.schemaType,
+    siteUrl,
   }),
   ...structuredData,
 ];
@@ -73,9 +77,11 @@ const jsonLd = [
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={imageUrl} />
   <meta name="twitter:image:alt" content={imageAlt} />
-  <link rel="icon" href="/assets/ucount-logo-favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="alternate icon" href="/assets/ucount-logo-favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://api.fontshare.com" />
-  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
   {jsonLd.map((schema) => (
     <script type="application/ld+json" set:html={safeJsonLd(schema)} />
   ))}
@@ -86,5 +92,6 @@ const jsonLd = [
   <slot />
   <Footer site={site} activePage={activePage} />
   <Cart />
+  <Analytics />
 </body>
 </html>

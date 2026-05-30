@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro";
-import { SITE_URL } from "../lib/seo";
+import { getSiteUrl } from "../lib/seo";
 
-export const GET: APIRoute = () => {
+export const GET: APIRoute = ({ url }) => {
+  const siteUrl = getSiteUrl(url.origin);
   const privatePaths = ["/api/"];
   const aiBots = [
     "GPTBot",
@@ -23,8 +24,8 @@ export const GET: APIRoute = () => {
       ...privatePaths.map((path) => `Disallow: ${path}`),
       "",
     ]),
-    `Sitemap: ${SITE_URL}/sitemap.xml`,
-    `Host: ${SITE_URL}`,
+    `Sitemap: ${siteUrl}/sitemap.xml`,
+    `Host: ${siteUrl}`,
     "",
   ];
 

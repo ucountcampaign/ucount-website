@@ -1,7 +1,7 @@
 import type { APIRoute } from "astro";
 import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
-import { SITE_URL, absoluteUrl } from "../lib/seo";
+import { absoluteUrl, getSiteUrl } from "../lib/seo";
 
 type SitemapEntry = {
   loc: string;
@@ -34,27 +34,28 @@ function sitemapEntry(entry: SitemapEntry): string {
     .join("\n");
 }
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
+  const siteUrl = getSiteUrl(url.origin);
   const now = new Date().toISOString();
   const [storefront, events] = await Promise.all([
     getStorefrontProducts(),
     getEvents(),
   ]);
   const staticEntries: SitemapEntry[] = [
-    { loc: `${SITE_URL}/`, changefreq: "weekly", priority: 1 },
-    { loc: absoluteUrl("/shop"), changefreq: "daily", priority: 0.9 },
-    { loc: absoluteUrl("/events"), changefreq: "daily", priority: 0.8 },
-    { loc: absoluteUrl("/about"), changefreq: "monthly", priority: 0.7 },
-    { loc: absoluteUrl("/contact"), changefreq: "monthly", priority: 0.6 },
+    { loc: `${siteUrl}/`, changefreq: "weekly", priority: 1 },
+    { loc: absoluteUrl("/shop", siteUrl), changefreq: "daily", priority: 0.9 },
+    { loc: absoluteUrl("/events", siteUrl), changefreq: "daily", priority: 0.8 },
+    { loc: absoluteUrl("/about", siteUrl), changefreq: "monthly", priority: 0.7 },
+    { loc: absoluteUrl("/contact", siteUrl), changefreq: "monthly", priority: 0.6 },
   ];
   const productEntries: SitemapEntry[] = storefront.products.map((product) => ({
-    loc: absoluteUrl(product.url),
+    loc: absoluteUrl(product.url, siteUrl),
     lastmod: product.createdDate || now,
     changefreq: "weekly",
     priority: 0.7,
   }));
   const eventEntries: SitemapEntry[] = events.allEvents.map((event) => ({
-    loc: absoluteUrl(event.detailHref),
+    loc: absoluteUrl(event.detailHref, siteUrl),
     lastmod: event.startDateTime || now,
     changefreq: event.lifecycle === "upcoming" ? "daily" : "yearly",
     priority: event.lifecycle === "upcoming" ? 0.7 : 0.4,

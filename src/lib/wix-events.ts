@@ -1,3 +1,5 @@
+import { resizeWixImageUrl } from "./images";
+
 export type EventLifecycle = "upcoming" | "past";
 
 export type EventAccent = "ember" | "gold" | "sky";
@@ -105,8 +107,8 @@ type WixEvent = {
 
 const eventCacheTtlMs = 5 * 60 * 1000;
 const marketplaceBoutiqueImageId = "dc65de_cbfbc80860444ed4bd8c9cec3ab039ef~mv2.jpg";
-const marketplaceBoutiqueImage = "/assets/events/ucount-marketplace-boutique-borderless.jpg";
-const eventPlaceholderImage = "/assets/events/ucount-event-placeholder.jpg";
+const marketplaceBoutiqueImage = "/assets/events/ucount-marketplace-boutique-borderless.webp";
+const eventPlaceholderImage = "/assets/events/ucount-event-placeholder.webp";
 
 type EventCacheEntry<T> = {
   expiresAt: number;
@@ -435,9 +437,13 @@ function eventImage(
 
   if (wixImageUrl) {
     return {
-      image: wixImageUrl,
+      image: resizeWixImageUrl(wixImageUrl, {
+        width: 1200,
+        height: 900,
+        mode: "fit",
+      }),
       imageAlt: event.title?.trim() || "U COUNT event image.",
-      imageLayout: "cover",
+      imageLayout: "contain",
     };
   }
 
