@@ -3,15 +3,48 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import Cart from "../components/Cart.astro";
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
+import {
+  absoluteUrl,
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_SOCIAL_IMAGE_ALT,
+  organizationSchema,
+  safeJsonLd,
+  type SeoMeta,
+  truncateDescription,
+  webPageSchema,
+  websiteSchema,
+} from "../lib/seo";
 import "../styles/global.css";
 
 type ActivePage = "home" | "about" | "contact" | "events" | "shop";
 
-const { title, site, activePage } = Astro.props as {
+const { title, site, activePage, meta, structuredData = [] } = Astro.props as {
   title: string;
   site: ResolvedSiteSettings;
   activePage: ActivePage;
+  meta?: SeoMeta;
+  structuredData?: unknown[];
 };
+
+const description = truncateDescription(
+  meta?.description || site.organizationSummary,
+);
+const canonicalPath = meta?.canonicalPath || Astro.url.pathname;
+const canonicalUrl = absoluteUrl(canonicalPath);
+const imageUrl = absoluteUrl(meta?.image || DEFAULT_SOCIAL_IMAGE);
+const imageAlt = meta?.imageAlt || DEFAULT_SOCIAL_IMAGE_ALT;
+const robots = meta?.noindex ? "noindex, nofollow" : "index, follow";
+const jsonLd = [
+  organizationSchema(site),
+  websiteSchema(site),
+  webPageSchema({
+    title,
+    description,
+    path: canonicalPath,
+    schemaType: meta?.schemaType,
+  }),
+  ...structuredData,
+];
 ---
 
 <!DOCTYPE html>
@@ -20,9 +53,32 @@ const { title, site, activePage } = Astro.props as {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="robots" content={robots} />
+  {meta?.keywords?.length && <meta name="keywords" content={meta.keywords.join(", ")} />}
+  <link rel="canonical" href={canonicalUrl} />
+  <meta name="theme-color" content="#a9461f" />
+  <meta name="application-name" content={site.siteName} />
+  <meta name="format-detection" content="telephone=no" />
+  <meta property="og:site_name" content={site.siteName} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content={meta?.type || "website"} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:image" content={imageUrl} />
+  <meta property="og:image:secure_url" content={imageUrl} />
+  <meta property="og:image:alt" content={imageAlt} />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={imageUrl} />
+  <meta name="twitter:image:alt" content={imageAlt} />
   <link rel="icon" href="/assets/ucount-logo-favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://api.fontshare.com" />
   <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet" />
+  {jsonLd.map((schema) => (
+    <script type="application/ld+json" set:html={safeJsonLd(schema)} />
+  ))}
   <slot name="head" />
 </head>
 <body class="bg-white text-neutral-900 overflow-x-hidden">

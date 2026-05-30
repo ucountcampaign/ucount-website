@@ -2,6 +2,11 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getStoreProductBySlug } from "../../lib/wix-store";
+import {
+  breadcrumbSchema,
+  productSchema,
+  truncateDescription,
+} from "../../lib/seo";
 
 const slug = Astro.params.slug ?? "";
 const [siteSettings, product] = await Promise.all([
@@ -85,6 +90,21 @@ const activeImageIndexCandidate = initialVariant
 const activeImageIndex = activeImageIndexCandidate >= 0 ? activeImageIndexCandidate : 0;
 const primaryImage =
   imagesForPage[activeImageIndex] ?? initialVariant?.image ?? images[0];
+const productDescription = truncateDescription(
+  product?.fullDescription ||
+    product?.description ||
+    "Shop U COUNT Marketplace goods that support prevention, awareness, restoration, and survivor dignity.",
+);
+const productStructuredData = product
+  ? [
+      breadcrumbSchema([
+        { name: "Home", path: "/" },
+        { name: "Marketplace", path: "/shop" },
+        { name: product.name, path: product.url },
+      ]),
+      productSchema(product),
+    ]
+  : [];
 
 Astro.response.headers.set(
   "Cache-Control",
@@ -92,7 +112,29 @@ Astro.response.headers.set(
 );
 ---
 
-<BaseLayout title={product ? `${product.name} — U COUNT Marketplace` : "Product Not Found — U COUNT"} site={site} activePage="shop">
+<BaseLayout
+  title={product ? `${product.name} — U COUNT Marketplace` : "Product Not Found — U COUNT"}
+  site={site}
+  activePage="shop"
+  meta={{
+    description: productDescription,
+    canonicalPath: product?.url || Astro.url.pathname,
+    image: primaryImage?.url || product?.image,
+    imageAlt: primaryImage?.alt || product?.imageAlt || "U COUNT Marketplace product",
+    type: "product",
+    schemaType: "ItemPage",
+    noindex: !product,
+    keywords: product
+      ? [
+          product.name,
+          "U COUNT Marketplace",
+          "shop with purpose",
+          ...product.categoryNames,
+        ]
+      : undefined,
+  }}
+  structuredData={productStructuredData}
+>
   {product ? (
     <>
       <section class="bg-neutral-50 pt-28 pb-8 lg:pt-32">

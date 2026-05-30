@@ -9,6 +9,7 @@ import {
   getTeamMembers,
   getValues,
 } from "../lib/wix-cms";
+import { breadcrumbSchema, truncateDescription } from "../lib/seo";
 
 const [
   siteSettings,
@@ -117,8 +118,28 @@ const accentClass = (token: string) =>
     "gold-400": "bg-gold-500/20 text-gold-400",
     "sky-400": "bg-sky-500/20 text-sky-400",
   })[token] ?? "bg-ember-brand/20 text-ember-brand";
+
+const aboutDescription = truncateDescription(hero.body);
 ---
-<BaseLayout title="About Us — U COUNT" site={site} activePage="about">
+<BaseLayout
+  title="About Us — U COUNT"
+  site={site}
+  activePage="about"
+  meta={{
+    description: aboutDescription,
+    canonicalPath: "/about",
+    schemaType: "AboutPage",
+    image: "/assets/photos/IMG_3234.jpg",
+    imageAlt: "U COUNT volunteers and leadership serving the anti-trafficking mission",
+    keywords: ["U COUNT mission", "anti-trafficking volunteers", "human trafficking nonprofit"],
+  }}
+  structuredData={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "About", path: "/about" },
+    ]),
+  ]}
+>
   <!-- PAGE HERO -->
   <section class="relative bg-ember-50/40 pt-28 pb-16 lg:pt-36 lg:pb-20">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center">

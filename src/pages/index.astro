@@ -12,6 +12,7 @@ import {
   getSiteSettings,
   resolveSiteSettings,
 } from "../lib/wix-cms";
+import { truncateDescription } from "../lib/seo";
 
 const [
   siteSettings,
@@ -272,6 +273,7 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
 const storeProducts = storeProductsResult.products;
+const homeDescription = truncateDescription(hero.body);
 
 Astro.response.headers.set(
   "Cache-Control",
@@ -296,7 +298,25 @@ const donateCta = {
   secondaryCtaUrl: localizeInternalUrl(cmsText(donateContent?.secondaryCtaUrl, "/shop")),
 };
 ---
-<BaseLayout title="U COUNT — Fight Human Trafficking" site={site} activePage="home">
+<BaseLayout
+  title="U COUNT — Fight Human Trafficking"
+  site={site}
+  activePage="home"
+  meta={{
+    description: homeDescription,
+    canonicalPath: "/",
+    image: hero.image,
+    imageAlt: "U COUNT anti-trafficking work through prevention, awareness, and restoration",
+    keywords: [
+      "U COUNT",
+      "human trafficking prevention",
+      "anti-trafficking nonprofit",
+      "Fort Collins nonprofit",
+      "survivor restoration",
+      "ethical marketplace",
+    ],
+  }}
+>
   <Fragment slot="head">
     <link rel="stylesheet" href="/assets/partners.css" />
     <style is:global>

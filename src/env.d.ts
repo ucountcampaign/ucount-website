@@ -1,6 +1,8 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
+  readonly PUBLIC_SITE_URL?: string;
+  readonly SITE_URL?: string;
   readonly WIX_SITE_ID?: string;
   readonly WIX_EVENTS_API_KEY?: string;
   readonly WIX_DATA_API_KEY?: string;

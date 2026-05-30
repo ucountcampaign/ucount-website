@@ -7,6 +7,11 @@ import {
   cmsText,
 } from "../lib/wix-cms";
 import { getStorefrontProducts } from "../lib/wix-store";
+import {
+  breadcrumbSchema,
+  productItemListSchema,
+  truncateDescription,
+} from "../lib/seo";
 
 const [siteSettings, heroContent, freedomContent, storeProductsResult] =
   await Promise.all([
@@ -41,6 +46,8 @@ const hero = {
     "U COUNT Marketplace empowers survivors of human trafficking by providing economic opportunity through handmade products. Every purchase supports alternative and sustainable income with dignity and hope.",
   ),
 };
+
+const shopDescription = truncateDescription(hero.body);
 
 function toVideoEmbedUrl(input: string): string {
   const url = input.trim();
@@ -96,7 +103,32 @@ Astro.response.headers.set(
 );
 ---
 
-<BaseLayout title="Marketplace — U COUNT" site={site} activePage="shop">
+<BaseLayout
+  title="Marketplace — U COUNT"
+  site={site}
+  activePage="shop"
+  meta={{
+    description: shopDescription,
+    canonicalPath: "/shop",
+    schemaType: "CollectionPage",
+    image: "/assets/events/ucount-marketplace-boutique-borderless.jpg",
+    imageAlt: "U COUNT Marketplace boutique goods",
+    keywords: [
+      "U COUNT Marketplace",
+      "shop with purpose",
+      "ethical gifts",
+      "survivor-made goods",
+      "freedom supply chain",
+    ],
+  }}
+  structuredData={[
+    breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Marketplace", path: "/shop" },
+    ]),
+    productItemListSchema(products),
+  ]}
+>
   <section class="bg-ember-50/40 pt-28 pb-12 lg:pt-36 lg:pb-16">
     <div class="max-w-7xl mx-auto px-6 lg:px-8">
       <div class="max-w-3xl">
