@@ -106,6 +106,7 @@ type WixEvent = {
 const eventCacheTtlMs = 5 * 60 * 1000;
 const marketplaceBoutiqueImageId = "dc65de_cbfbc80860444ed4bd8c9cec3ab039ef~mv2.jpg";
 const marketplaceBoutiqueImage = "/assets/events/ucount-marketplace-boutique-borderless.jpg";
+const eventPlaceholderImage = "/assets/events/ucount-event-placeholder.jpg";
 
 type EventCacheEntry<T> = {
   expiresAt: number;
@@ -424,8 +425,6 @@ function eventImage(
   event: WixEvent,
   wixImageUrl: string,
 ): Pick<EventItem, "image" | "imageAlt" | "imageLayout"> {
-  const title = event.title?.toLowerCase() ?? "";
-
   if (wixImageUrl.includes(marketplaceBoutiqueImageId)) {
     return {
       image: marketplaceBoutiqueImage,
@@ -442,25 +441,9 @@ function eventImage(
     };
   }
 
-  if (/market|boutique|shop/.test(title)) {
-    return {
-      image: "/assets/photos/IMG_3153.jpg",
-      imageAlt: "A sewing machine stitching colorful fabric for marketplace goods.",
-      imageLayout: "cover",
-    };
-  }
-
-  if (/symposium|awareness|learn|speaker/.test(title)) {
-    return {
-      image: "/assets/photos/IMG_3234.jpg",
-      imageAlt: "A community gathering seated for a training session.",
-      imageLayout: "cover",
-    };
-  }
-
   return {
-    image: "/assets/photos/IMG_4722.jpg",
-    imageAlt: "People creating colorful artwork together.",
+    image: eventPlaceholderImage,
+    imageAlt: "U COUNT event placeholder image.",
     imageLayout: "cover",
   };
 }
@@ -613,7 +596,7 @@ async function queryPastEvents(): Promise<WixEvent[]> {
     query: {
       filter: { status: { $in: ["ENDED"] } },
       sort: [{ fieldName: "dateAndTimeSettings.startDate", order: "DESC" }],
-      paging: { limit: 12, offset: 0 },
+      paging: { limit: 50, offset: 0 },
     },
   });
 }

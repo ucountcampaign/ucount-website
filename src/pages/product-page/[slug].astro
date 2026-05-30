@@ -116,7 +116,7 @@ Astro.response.headers.set(
                     srcset={primaryImage.srcSet}
                     sizes="(min-width: 1024px) 52vw, 100vw"
                     alt={primaryImage.alt}
-                    class="h-full w-full object-contain"
+                    class="h-full w-full object-contain transition-opacity duration-300 ease-out"
                     fetchpriority="high"
                     decoding="async"
                   />
@@ -318,6 +318,7 @@ Astro.response.headers.set(
         const variantTrigger = requiredSelect?.querySelector("[data-custom-select-trigger]");
         const variantValueLabel = requiredSelect?.querySelector("[data-custom-select-value]");
         const variantOptions = Array.from(requiredSelect?.querySelectorAll("[data-custom-select-option]") ?? []);
+        let mainImageSwapToken = 0;
 
         function initCustomSelects() {
           document.querySelectorAll("[data-custom-select]").forEach((select) => {
@@ -416,18 +417,65 @@ Astro.response.headers.set(
             return;
           }
 
-          mainImage.src = url;
-
-          if (srcset) {
-            mainImage.srcset = srcset;
-          }
-
-          if (alt) {
-            mainImage.alt = alt;
-          }
-
           if (mainImageLink && fullUrl) {
             mainImageLink.href = fullUrl;
+          }
+
+          if (mainImage.currentSrc === url || mainImage.src === url) {
+            if (alt) {
+              mainImage.alt = alt;
+            }
+            return;
+          }
+
+          const token = (mainImageSwapToken += 1);
+
+          const applySwap = () => {
+            if (token !== mainImageSwapToken) {
+              return;
+            }
+
+            mainImage.style.transition = "none";
+            mainImage.style.opacity = "0";
+            void mainImage.offsetWidth;
+
+            mainImage.src = url;
+
+            if (srcset) {
+              mainImage.srcset = srcset;
+            } else {
+              mainImage.removeAttribute("srcset");
+            }
+
+            if (alt) {
+              mainImage.alt = alt;
+            }
+
+            requestAnimationFrame(() => {
+              if (token !== mainImageSwapToken) {
+                return;
+              }
+              mainImage.style.transition = "";
+              mainImage.style.opacity = "";
+            });
+          };
+
+          const preloader = new Image();
+          preloader.sizes = mainImage.sizes || "(min-width: 1024px) 52vw, 100vw";
+
+          if (srcset) {
+            preloader.srcset = srcset;
+          }
+
+          preloader.src = url;
+
+          if (typeof preloader.decode === "function") {
+            preloader.decode().then(applySwap).catch(applySwap);
+          } else if (preloader.complete) {
+            applySwap();
+          } else {
+            preloader.onload = applySwap;
+            preloader.onerror = applySwap;
           }
         }
 
