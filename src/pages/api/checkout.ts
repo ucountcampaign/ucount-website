@@ -1,5 +1,8 @@
 import type { APIRoute } from "astro";
-import { createCheckoutUrlForProduct } from "../../lib/wix-store";
+import {
+  createCheckoutUrlForCart,
+  type CheckoutLineItemInput,
+} from "../../lib/wix-store";
 
 function getString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -7,8 +10,8 @@ function getString(formData: FormData, key: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getQuantity(value: string): number {
-  const quantity = Number.parseInt(value, 10);
+function getQuantity(value: unknown): number {
+  const quantity = Number.parseInt(String(value), 10);
 
   if (!Number.isFinite(quantity)) {
     return 1;
@@ -17,27 +20,79 @@ function getQuantity(value: string): number {
   return Math.min(100, Math.max(1, quantity));
 }
 
-export const POST: APIRoute = async ({ request, redirect }) => {
-  const formData = await request.formData();
-  const productSlug = getString(formData, "productSlug");
-  const productId = getString(formData, "productId");
-  const variantId = getString(formData, "variantId") || undefined;
-  const quantity = getQuantity(getString(formData, "quantity"));
-  const fallbackPath = productSlug
-    ? `/product-page/${encodeURIComponent(productSlug)}`
-    : "/shop";
+function parseCartItems(raw: string): CheckoutLineItemInput[] {
+  let parsed: unknown;
 
   try {
-    const checkoutUrl = await createCheckoutUrlForProduct({
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  const items: CheckoutLineItemInput[] = [];
+
+  for (const entry of parsed) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+
+    const record = entry as Record<string, unknown>;
+    const productId =
+      typeof record.productId === "string" ? record.productId.trim() : "";
+    const productSlug =
+      typeof record.productSlug === "string" ? record.productSlug.trim() : "";
+
+    if (!productId || !productSlug) {
+      continue;
+    }
+
+    const variantId =
+      typeof record.variantId === "string" && record.variantId.trim()
+        ? record.variantId.trim()
+        : undefined;
+
+    items.push({
       productId,
       productSlug,
-      quantity,
       variantId,
+      quantity: getQuantity(record.quantity),
     });
+  }
+
+  return items;
+}
+
+export const POST: APIRoute = async ({ request, redirect }) => {
+  const formData = await request.formData();
+  const cartPayload = getString(formData, "cart");
+  const productSlug = getString(formData, "productSlug");
+  const fallbackPath = cartPayload
+    ? "/shop?checkout=error"
+    : productSlug
+      ? `/product-page/${encodeURIComponent(productSlug)}?checkout=error`
+      : "/shop?checkout=error";
+
+  const items = cartPayload
+    ? parseCartItems(cartPayload)
+    : [
+        {
+          productId: getString(formData, "productId"),
+          productSlug,
+          variantId: getString(formData, "variantId") || undefined,
+          quantity: getQuantity(getString(formData, "quantity")),
+        },
+      ];
+
+  try {
+    const checkoutUrl = await createCheckoutUrlForCart(items);
 
     return redirect(checkoutUrl, 303);
   } catch (error) {
     console.error("Failed to create Wix checkout", error);
-    return redirect(`${fallbackPath}?checkout=error`, 303);
+    return redirect(fallbackPath, 303);
   }
 };

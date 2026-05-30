@@ -1,7 +1,7 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 
-type ActivePage = "home" | "about" | "contact" | "shop";
+type ActivePage = "home" | "about" | "contact" | "events" | "shop";
 
 const { site, activePage } = Astro.props as {
   site: ResolvedSiteSettings;
@@ -10,12 +10,13 @@ const { site, activePage } = Astro.props as {
 
 const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
 const navItems = [
+  { label: "Shop", href: "/shop", page: "shop" },
+  { label: "Events", href: "/events", page: "events" },
+  { label: "About", href: "/about", page: "about" },
+  { label: "Contact", href: "/contact", page: "contact" },
   { label: "Mission", href: homeHref("#mission") },
   { label: "Impact", href: homeHref("#impact") },
   { label: "Partners", href: homeHref("#partners") },
-  { label: "Shop", href: "/shop", page: "shop" },
-  { label: "About", href: "/about", page: "about" },
-  { label: "Contact", href: "/contact", page: "contact" },
 ];
 
 const desktopClass = (page?: string) =>
@@ -40,7 +41,7 @@ const mobileClass = (page?: string) =>
         <img src="/assets/UCOUNT_logo_lockup_Black.png" alt="U COUNT Campaign" class="h-[4.5rem] lg:h-[5.5rem] w-auto">
       </a>
 
-      <div class="hidden lg:flex items-center gap-8">
+      <div class="hidden lg:flex items-center gap-6 xl:gap-8">
         {navItems.map((item) => (
           <a
             href={item.href}
@@ -50,16 +51,26 @@ const mobileClass = (page?: string) =>
             {item.label}
           </a>
         ))}
+        <button type="button" data-cart-open class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-ember-50 hover:text-ember-brand" aria-label="Open cart" aria-controls="cartDrawer">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293A1 1 0 005.414 17H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span data-cart-count hidden class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-ember-brand px-1 text-[11px] font-bold leading-none text-white shadow-sm">0</span>
+        </button>
         <a href={site.primaryDonateUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-5 py-2.5 bg-ember-brand text-white font-display font-semibold text-sm rounded-full hover:bg-ember-500 transition-colors shadow-lg shadow-ember-brand/25">
           Donate
         </a>
       </div>
 
-      <button data-mobile-menu-toggle class="lg:hidden flex flex-col gap-1.5 p-2" aria-controls="mobileMenu" aria-expanded="false">
-        <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
-        <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
-        <span class="w-4 h-0.5 bg-neutral-800 rounded"></span>
-      </button>
+      <div class="flex items-center gap-1 lg:hidden">
+        <button type="button" data-cart-open class="relative flex h-10 w-10 items-center justify-center rounded-full text-neutral-700 transition-colors hover:bg-ember-50 hover:text-ember-brand" aria-label="Open cart" aria-controls="cartDrawer">
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293A1 1 0 005.414 17H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span data-cart-count hidden class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-ember-brand px-1 text-[11px] font-bold leading-none text-white shadow-sm">0</span>
+        </button>
+        <button data-mobile-menu-toggle class="flex flex-col gap-1.5 p-2" aria-controls="mobileMenu" aria-expanded="false">
+          <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
+          <span class="w-6 h-0.5 bg-neutral-800 rounded"></span>
+          <span class="w-4 h-0.5 bg-neutral-800 rounded"></span>
+        </button>
+      </div>
     </div>
   </div>
 

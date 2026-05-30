@@ -1,0 +1,472 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import SocialIcon from "../../components/SocialIcon.astro";
+import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
+import { getEventBySlug, getEvents } from "../../lib/wix-events";
+
+const [siteSettings, event, eventsResult] = await Promise.all([
+  getSiteSettings(),
+  getEventBySlug(Astro.params.slug),
+  getEvents(),
+]);
+
+if (!event) {
+  return Astro.redirect("/events");
+}
+
+const site = resolveSiteSettings(siteSettings);
+const eventTimestamp = (item: { startDateTime: string }) => {
+  const timestamp = new Date(item.startDateTime).getTime();
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+const chronologicalEvents = [...eventsResult.allEvents].sort(
+  (left, right) => eventTimestamp(left) - eventTimestamp(right),
+);
+const currentEventIndex = chronologicalEvents.findIndex(
+  (item) => item.slug === event.slug,
+);
+const earlierEvents =
+  currentEventIndex >= 0
+    ? chronologicalEvents.slice(0, currentEventIndex).reverse()
+    : chronologicalEvents
+        .filter((item) => eventTimestamp(item) < eventTimestamp(event))
+        .reverse();
+const laterEvents =
+  currentEventIndex >= 0
+    ? chronologicalEvents.slice(currentEventIndex + 1)
+    : chronologicalEvents.filter(
+        (item) => eventTimestamp(item) > eventTimestamp(event),
+      );
+const forwardEvent = laterEvents[0];
+const backwardEvent = earlierEvents[0];
+const hasRelatedEvents = Boolean(forwardEvent || backwardEvent);
+const heroImage = event.image;
+const shouldShowDetailImage = event.image.startsWith(
+  "https://static.wixstatic.com/media/",
+);
+const lifecycleLabel = event.lifecycle === "upcoming" ? "Upcoming" : "Past";
+const shouldShowStatusBadge =
+  event.badge.toLowerCase() !== lifecycleLabel.toLowerCase();
+const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+  [event.venueName, ...event.addressLines].join(" "),
+)}`;
+const shareUrl = new URL(Astro.url.pathname, Astro.url.origin).toString();
+const shareText = `${event.title} - ${event.dateLabel}`;
+
+// Facebook/LinkedIn need an absolute, correctly-sized image to render a
+// preview card. Wix-hosted media can be transformed on the fly into a
+// standard 1.91:1 (1200x630) OG image, which also lets us declare exact
+// dimensions — LinkedIn often skips the preview when dimensions are missing.
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 630;
+const wixMediaMatch = event.image.match(
+  /^https:\/\/static\.wixstatic\.com\/media\/([^/]+)$/,
+);
+const shareImage = wixMediaMatch
+  ? {
+      url: `https://static.wixstatic.com/media/${wixMediaMatch[1]}/v1/fill/w_${OG_WIDTH},h_${OG_HEIGHT},al_c,q_85/file.jpg`,
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
+    }
+  : {
+      url: new URL(event.image, Astro.url.origin).toString(),
+      width: undefined as number | undefined,
+      height: undefined as number | undefined,
+    };
+const shareImageUrl = shareImage.url;
+const metaDescription = event.summary || event.description;
+const shareLinks = [
+  {
+    label: "Share on Facebook",
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+    icon: "facebook",
+  },
+  {
+    label: "Share on X",
+    href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`,
+    icon: "x",
+  },
+  {
+    label: "Share on LinkedIn",
+    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`,
+    icon: "linkedin",
+  },
+] as const;
+const eventFocus = (
+  {
+    Awareness: {
+      title: "Awareness & Action",
+      body:
+        "Connect with education, collaboration, and practical community response.",
+    },
+    Marketplace: {
+      title: "Shop With Purpose",
+      body:
+        "Browse handmade goods that help create sustainable income and dignity.",
+    },
+  } as Record<string, { title: string; body: string }>
+)[event.eyebrow] ?? {
+  title: "Community Gathering",
+  body: "Join U COUNT for a local opportunity to learn, serve, and take action.",
+};
+---
+
+<BaseLayout title={`${event.title} - U COUNT`} site={site} activePage="events">
+  <Fragment slot="head">
+    <link rel="canonical" href={shareUrl} />
+    <meta name="description" content={metaDescription} />
+    <meta property="og:site_name" content="U COUNT" />
+    <meta property="og:title" content={`${event.title} - U COUNT`} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={shareUrl} />
+    <meta property="og:image" content={shareImageUrl} />
+    <meta property="og:image:secure_url" content={shareImageUrl} />
+    <meta property="og:image:alt" content={event.imageAlt} />
+    {shareImage.width && <meta property="og:image:width" content={String(shareImage.width)} />}
+    {shareImage.height && <meta property="og:image:height" content={String(shareImage.height)} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${event.title} - U COUNT`} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={shareImageUrl} />
+    <meta name="twitter:image:alt" content={event.imageAlt} />
+    <script is:inline>
+      // Runs in <head> before the body paints. If we arrived here intending to
+      // land on the event content, hide the page up front so the user never
+      // sees the top-of-page state before we scroll — that flash is the jarring
+      // "jump". The body script positions the page and fades it back in.
+      (function () {
+        var id = "event-content";
+        var key = "ucount:event-detail-scroll-target";
+        var hold = window.location.hash === "#" + id;
+
+        try {
+          if (sessionStorage.getItem(key) === id) {
+            hold = true;
+          }
+          sessionStorage.removeItem(key);
+        } catch (error) {
+          // Storage access is best-effort.
+        }
+
+        if (!hold) {
+          return;
+        }
+
+        window.__eventScrollHold = true;
+
+        if ("scrollRestoration" in history) {
+          history.scrollRestoration = "manual";
+        }
+
+        var root = document.documentElement;
+        root.style.opacity = "0";
+
+        // Failsafe: never leave the page hidden if the body script fails to run.
+        window.setTimeout(function () {
+          root.style.transition = "opacity 0.25s ease";
+          root.style.opacity = "1";
+        }, 1500);
+      })();
+    </script>
+  </Fragment>
+
+  <section class="relative overflow-hidden pt-28 text-white lg:pt-32">
+    <img
+      src={heroImage}
+      alt=""
+      class="absolute inset-0 h-full w-full object-cover"
+      aria-hidden="true"
+    />
+    <div class="absolute inset-0 bg-neutral-950/75"></div>
+    <div class="absolute inset-0 bg-gradient-to-br from-neutral-950 via-neutral-950/70 to-ember-900/70"></div>
+
+    <div class="relative z-10 mx-auto max-w-7xl px-6 pb-16 pt-14 lg:px-8 lg:pb-24 lg:pt-20">
+      <a href="/events" class="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-ember-100 transition-colors hover:text-white">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Events
+      </a>
+
+      <div class="max-w-4xl">
+        <div class="mb-5 flex flex-wrap items-center gap-3">
+          <span class="rounded-full bg-ember-brand px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-white">
+            {lifecycleLabel}
+          </span>
+          {shouldShowStatusBadge && (
+            <span class="rounded-full bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-neutral-100">
+              {event.badge}
+            </span>
+          )}
+        </div>
+        <h1 class="font-display text-4xl font-bold tracking-tight sm:text-5xl lg:text-7xl">
+          {event.title}
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-relaxed text-neutral-200 lg:text-xl">
+          {event.summary}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="event-content" class="scroll-mt-24 bg-white py-16 lg:py-24">
+    <div class="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[minmax(0,1fr)_24rem] lg:px-8">
+      <article>
+        <div class="mb-5 flex items-center gap-3">
+          <div class="h-px w-12 bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">About The Event</span>
+        </div>
+        <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">
+          {event.title}
+        </h2>
+        <p class="mt-6 text-lg leading-relaxed text-neutral-600">
+          {event.description || event.summary}
+        </p>
+
+        {shouldShowDetailImage && (
+          <div class="mt-8 aspect-[16/10] overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm">
+            <img
+              src={event.image}
+              alt={event.imageAlt}
+              class="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        )}
+
+        <div class="mt-10 grid gap-5 sm:grid-cols-2">
+          <div class="rounded-2xl border border-ember-200 bg-ember-50/50 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-ember-700">{eventFocus.title}</p>
+            <p class="mt-3 text-sm leading-relaxed text-neutral-700">
+              {eventFocus.body}
+            </p>
+          </div>
+          <div class="rounded-2xl border border-neutral-200 bg-neutral-50 p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Registration</p>
+            <p class="mt-3 text-sm leading-relaxed text-neutral-700">
+              {event.registrationAvailable
+                ? "Registration is available through the event link."
+                : "Registration is not currently available for this event."}
+            </p>
+          </div>
+        </div>
+      </article>
+
+      <aside class="h-fit rounded-2xl border border-neutral-200 bg-neutral-50 p-6 shadow-sm">
+        <h2 class="font-display text-2xl font-bold text-neutral-900">Event Details</h2>
+
+        <dl class="mt-6 grid gap-5">
+          <div class="flex gap-4">
+            <dt class="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-ember-brand text-white">
+              <span class="sr-only">Date</span>
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3M5 11h14M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </dt>
+            <dd>
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Date & Time</p>
+              <time datetime={event.startDateTime} class="mt-1 block font-semibold text-neutral-900">{event.dateLabel}</time>
+              <p class="text-sm text-neutral-600">{event.timeLabel}</p>
+            </dd>
+          </div>
+
+          <div class="flex gap-4">
+            <dt class="mt-0.5 flex h-10 w-10 flex-none items-center justify-center rounded-full bg-neutral-900 text-white">
+              <span class="sr-only">Location</span>
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10.5a2 2 0 100-4 2 2 0 000 4z"/></svg>
+            </dt>
+            <dd>
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Location</p>
+              <p class="mt-1 font-semibold text-neutral-900">{event.venueName}</p>
+              <p class="text-sm leading-relaxed text-neutral-600">
+                {event.addressLines.map((line) => (
+                  <>
+                    {line}<br />
+                  </>
+                ))}
+              </p>
+            </dd>
+          </div>
+        </dl>
+
+        <div class="mt-7 grid gap-3">
+          {event.registrationHref && (
+            <a href={event.registrationHref} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full bg-ember-brand px-5 py-3 font-display text-sm font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500">
+              {event.registrationLabel}
+            </a>
+          )}
+          {!event.locationIsTbd && event.addressLines.length > 0 && (
+            <a href={mapHref} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-5 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900">
+              Get Directions
+            </a>
+          )}
+          {event.calendarHref && (
+            <a href={event.calendarHref} target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-5 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900">
+              Add to Calendar
+            </a>
+          )}
+          <a href="/contact" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-5 py-3 font-display text-sm font-semibold text-neutral-800 transition-colors hover:border-neutral-900">
+            Contact U COUNT
+          </a>
+        </div>
+
+        <div class="mt-8 border-t border-neutral-200 pt-6">
+          <h3 class="font-display text-xl font-bold text-neutral-900">Spread the word</h3>
+          <p class="mt-2 text-sm text-neutral-600">Know someone who should be here? Share this event and help grow our community of action.</p>
+          <div class="mt-4 flex items-center gap-3">
+            {shareLinks.map((link) => (
+              <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label} title={link.label} class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 transition-colors hover:border-ember-brand hover:bg-ember-brand hover:text-white">
+                <SocialIcon name={link.icon} class="h-[18px] w-[18px]" />
+              </a>
+            ))}
+            <a href={`mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(shareUrl)}`} aria-label="Share by email" title="Share by email" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 transition-colors hover:border-ember-brand hover:bg-ember-brand hover:text-white">
+              <SocialIcon name="mail" class="h-[18px] w-[18px]" />
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  {hasRelatedEvents && (
+    <section class="bg-neutral-50 py-16 lg:py-20">
+      <div class="mx-auto max-w-7xl px-6 lg:px-8">
+        <div class="mb-8 flex items-center gap-3">
+          <div class="h-px w-12 bg-ember-brand"></div>
+          <span class="text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">More Events</span>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {forwardEvent && (
+            <a href={`${forwardEvent.detailHref}#event-content`} data-related-event-link class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Next Event</p>
+              <h3 class="mt-2 font-display text-xl font-bold text-neutral-900">{forwardEvent.title}</h3>
+              <p class="mt-2 text-sm text-neutral-600">{forwardEvent.dateLabel}{forwardEvent.timeLabel && ` - ${forwardEvent.timeLabel}`}</p>
+            </a>
+          )}
+          {backwardEvent && (
+            <a href={`${backwardEvent.detailHref}#event-content`} data-related-event-link class:list={[
+              "rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md",
+              !forwardEvent && "sm:col-start-2",
+            ]}>
+              <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Previous Event</p>
+              <h3 class="mt-2 font-display text-xl font-bold text-neutral-900">{backwardEvent.title}</h3>
+              <p class="mt-2 text-sm text-neutral-600">{backwardEvent.dateLabel}{backwardEvent.timeLabel && ` - ${backwardEvent.timeLabel}`}</p>
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <script is:inline>
+    const eventContentId = "event-content";
+    const relatedScrollKey = "ucount:event-detail-scroll-target";
+
+    // Mark intent before navigating to a related event. The URL anchor keeps
+    // the destination shareable; this flag lets the next page correct the
+    // offset after fonts and images settle.
+    document.querySelectorAll("[data-related-event-link]").forEach((link) => {
+      link.addEventListener("click", () => {
+        try {
+          sessionStorage.setItem(relatedScrollKey, eventContentId);
+        } catch {
+          // Scroll positioning is a progressive enhancement.
+        }
+      });
+    });
+
+    const revealPage = () => {
+      const root = document.documentElement;
+
+      if (root.style.opacity === "0") {
+        root.style.transition = "opacity 0.25s ease";
+        root.style.opacity = "1";
+      }
+    };
+
+    // The head script set this flag (and hid the page) before first paint.
+    if (window.__eventScrollHold === true) {
+      let userMoved = false;
+      ["wheel", "touchstart", "keydown", "mousedown"].forEach((eventName) => {
+        window.addEventListener(
+          eventName,
+          () => {
+            userMoved = true;
+            revealPage();
+          },
+          { once: true, passive: true },
+        );
+      });
+
+      const headerOffset = () =>
+        window.matchMedia("(min-width: 1024px)").matches ? 96 : 80;
+
+      // Pin the content section into place. Running this every animation frame
+      // (before paint) means any layout shift from late-loading images or font
+      // swaps is corrected within the same frame — and because the page stays
+      // hidden until we reveal it, none of this positioning is ever visible.
+      const pinEventContent = () => {
+        if (userMoved) {
+          return;
+        }
+
+        const target = document.getElementById(eventContentId);
+
+        if (!target) {
+          return;
+        }
+
+        const targetTop = Math.max(
+          target.getBoundingClientRect().top + window.scrollY - headerOffset(),
+          0,
+        );
+
+        if (Math.abs(window.scrollY - targetTop) > 1) {
+          window.scrollTo({ top: targetTop, behavior: "auto" });
+        }
+      };
+
+      // The biggest source of "jump" is the hero heading reflowing when the web
+      // font finishes loading, which moves the target after we positioned. So we
+      // keep the page hidden until fonts are ready (that reflow happens while
+      // invisible), then pin to the final position and fade in — no visible jump.
+      let revealed = false;
+      const positionAndReveal = () => {
+        if (revealed) {
+          return;
+        }
+        revealed = true;
+        pinEventContent();
+        revealPage();
+      };
+
+      pinEventContent();
+
+      if (document.fonts && typeof document.fonts.ready?.then === "function") {
+        document.fonts.ready.then(() =>
+          requestAnimationFrame(() => requestAnimationFrame(positionAndReveal)),
+        );
+      } else {
+        requestAnimationFrame(() => requestAnimationFrame(positionAndReveal));
+      }
+
+      // Reveal on load and a hard cap so the page is never hidden too long.
+      window.addEventListener("load", () =>
+        requestAnimationFrame(positionAndReveal),
+      );
+      setTimeout(positionAndReveal, 1200);
+
+      // Keep correcting through any remaining shifts while hidden, and briefly
+      // after reveal (cap stops it on its own; user interaction releases it).
+      const startedAt = performance.now();
+      const holdUntilSettled = () => {
+        pinEventContent();
+
+        if (!userMoved && performance.now() - startedAt < 3000) {
+          requestAnimationFrame(holdUntilSettled);
+        }
+      };
+
+      requestAnimationFrame(holdUntilSettled);
+    }
+  </script>
+</BaseLayout>
