@@ -439,11 +439,11 @@ function eventImage(
     return {
       image: resizeWixImageUrl(wixImageUrl, {
         width: 1200,
-        height: 900,
-        mode: "fit",
+        height: 675,
+        mode: "fill",
       }),
       imageAlt: event.title?.trim() || "U COUNT event image.",
-      imageLayout: "contain",
+      imageLayout: "cover",
     };
   }
 
