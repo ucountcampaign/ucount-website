@@ -4,6 +4,7 @@ import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getStoreProductBySlug } from "../../lib/wix-store";
 import {
   breadcrumbSchema,
+  getSiteUrl,
   productSchema,
   truncateDescription,
 } from "../../lib/seo";
@@ -15,6 +16,7 @@ const [siteSettings, product] = await Promise.all([
 ]);
 
 const site = resolveSiteSettings(siteSettings);
+const siteUrl = getSiteUrl(Astro.url.origin);
 const checkoutStatus = Astro.url.searchParams.get("checkout");
 
 if (!product) {
@@ -101,8 +103,8 @@ const productStructuredData = product
         { name: "Home", path: "/" },
         { name: "Marketplace", path: "/shop" },
         { name: product.name, path: product.url },
-      ]),
-      productSchema(product),
+      ], siteUrl),
+      productSchema(product, siteUrl),
     ]
   : [];
 
@@ -183,7 +185,7 @@ Astro.response.headers.set(
                     aria-pressed={index === activeImageIndex ? "true" : "false"}
                     aria-label={`View image ${index + 1}${image.variantLabel ? `, ${image.variantLabel}` : ""}${image.availabilityLabel ? `, ${image.availabilityLabel}` : ""}`}
                   >
-                    <img src={image.thumbnailUrl} alt="" class={`h-full w-full object-cover ${image.availabilityLabel ? "opacity-45 grayscale-[25%]" : ""}`} loading="lazy" />
+                    <img src={image.thumbnailUrl} alt={image.alt} class={`h-full w-full object-cover ${image.availabilityLabel ? "opacity-45 grayscale-[25%]" : ""}`} loading="lazy" decoding="async" />
                     {image.availabilityLabel && (
                       <>
                         <span class="absolute inset-0 bg-white/20" aria-hidden="true"></span>

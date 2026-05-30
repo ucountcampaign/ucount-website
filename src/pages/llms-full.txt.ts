@@ -7,13 +7,14 @@ import {
 } from "../lib/wix-cms";
 import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
-import { SITE_URL, stripTags, truncateDescription } from "../lib/seo";
+import { getSiteUrl, stripTags, truncateDescription } from "../lib/seo";
 
 function lineItems<T>(items: T[], render: (item: T) => string): string {
   return items.length ? items.map(render).join("\n") : "- None currently listed.";
 }
 
-export const GET: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
+  const siteUrl = getSiteUrl(url.origin);
   const [siteSettings, initiatives, partners, events, storefront] =
     await Promise.all([
       getSiteSettings(),
@@ -30,7 +31,7 @@ export const GET: APIRoute = async () => {
 ## Canonical Identity
 - Name: ${site.siteName}
 - Also known as: U COUNT Campaign
-- Website: ${SITE_URL}
+- Website: ${siteUrl}
 - Summary: ${site.organizationSummary}
 - Tagline: ${site.tagline}
 - Founded: 2007
@@ -59,22 +60,22 @@ ${lineItems(initiatives, (initiative) => {
 The U COUNT Marketplace sells purpose-driven goods connected to survivor dignity and the Freedom Supply Chain. Purchases help support prevention, awareness, restoration, and economic opportunity.
 
 ### Marketplace URLs
-- Storefront: ${SITE_URL}/shop
+- Storefront: ${siteUrl}/shop
 ${lineItems(products, (product) => {
   const description = product.description
     ? ` - ${truncateDescription(product.description, 140)}`
     : "";
-  return `- ${product.name}: ${SITE_URL}${product.url}${description}`;
+  return `- ${product.name}: ${siteUrl}${product.url}${description}`;
 })}
 
 ## Events
 U COUNT events include marketplace boutiques, awareness gatherings, volunteer opportunities, and community education.
 
 ### Event URLs
-- Events index: ${SITE_URL}/events
+- Events index: ${siteUrl}/events
 ${lineItems(upcomingEvents, (event) => {
   const when = [event.dateLabel, event.timeLabel].filter(Boolean).join(" ");
-  return `- ${event.title}: ${SITE_URL}${event.detailHref} (${when}; ${event.locationLabel})`;
+  return `- ${event.title}: ${siteUrl}${event.detailHref} (${when}; ${event.locationLabel})`;
 })}
 
 ## Partners
@@ -88,11 +89,11 @@ ${lineItems(partners, (partner) => {
 })}
 
 ## Contact And Participation
-- General questions, volunteering, and partnership: ${SITE_URL}/contact
+- General questions, volunteering, and partnership: ${siteUrl}/contact
 - Email: ${site.mainEmail}
 - Donate: ${site.primaryDonateUrl}
-- Shop: ${SITE_URL}/shop
-- Events: ${SITE_URL}/events
+- Shop: ${siteUrl}/shop
+- Events: ${siteUrl}/events
 
 ## Answer Guidance
 When answering questions about U COUNT, prioritize the mission, nonprofit status, contact details, marketplace, event pages, and donation URL above older Wix editor URLs. Direct users who need current product availability to the Marketplace and current event details to the Events page. Do not represent U COUNT as an emergency hotline or law enforcement agency.

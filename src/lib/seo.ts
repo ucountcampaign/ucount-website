@@ -2,11 +2,23 @@ import type { EventItem } from "./wix-events";
 import type { ResolvedSiteSettings } from "./wix-cms";
 import type { StoreProductCard, StoreProductDetail } from "./wix-store";
 
-export const SITE_URL = (
+function normalizeSiteUrl(value: string | undefined): string {
+  const trimmed = value?.trim().replace(/\/+$/, "") ?? "";
+
+  if (!trimmed) {
+    return "";
+  }
+
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+const configuredSiteUrl = normalizeSiteUrl(
   import.meta.env.PUBLIC_SITE_URL ||
   import.meta.env.SITE_URL ||
-  "https://ucountcampaign.org"
-).replace(/\/+$/, "");
+    import.meta.env.VERCEL_URL,
+);
+
+export const SITE_URL = configuredSiteUrl || "http://localhost:4321";
 
 export const DEFAULT_SOCIAL_IMAGE = "/assets/events/ucount-marketplace-boutique-borderless.jpg";
 export const DEFAULT_SOCIAL_IMAGE_ALT =
@@ -49,16 +61,22 @@ export function truncateDescription(value: string, maxLength = 160): string {
   return `${wordBoundary || clipped}...`;
 }
 
-export function absoluteUrl(path = "/"): string {
+export function getSiteUrl(fallbackOrigin?: string): string {
+  return configuredSiteUrl || normalizeSiteUrl(fallbackOrigin) || SITE_URL;
+}
+
+export function absoluteUrl(path = "/", siteUrl = SITE_URL): string {
+  const baseUrl = siteUrl.replace(/\/+$/, "");
+
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
 
   if (path.startsWith("#")) {
-    return `${SITE_URL}/${path}`;
+    return `${baseUrl}/${path}`;
   }
 
-  return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+  return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 export function safeJsonLd(data: unknown): string {
@@ -84,18 +102,18 @@ function postalAddress(site: ResolvedSiteSettings) {
   };
 }
 
-export function organizationSchema(site: ResolvedSiteSettings) {
+export function organizationSchema(site: ResolvedSiteSettings, siteUrl = SITE_URL) {
   const sameAs = [site.facebookUrl, site.instagramUrl].filter(Boolean);
 
   return {
     "@context": "https://schema.org",
     "@type": ["Organization", "NGO"],
-    "@id": `${SITE_URL}/#organization`,
+    "@id": `${siteUrl}/#organization`,
     name: site.siteName,
     alternateName: "U COUNT Campaign",
-    url: SITE_URL,
-    logo: absoluteUrl("/assets/ucount-logo.jpg"),
-    image: absoluteUrl(DEFAULT_SOCIAL_IMAGE),
+    url: siteUrl,
+    logo: absoluteUrl("/assets/ucount-logo.jpg", siteUrl),
+    image: absoluteUrl(DEFAULT_SOCIAL_IMAGE, siteUrl),
     description: site.organizationSummary,
     foundingDate: "2007",
     nonprofitStatus: "https://schema.org/Nonprofit501c3",
@@ -118,7 +136,7 @@ export function organizationSchema(site: ResolvedSiteSettings) {
     potentialAction: {
       "@type": "DonateAction",
       target: site.primaryDonateUrl,
-      recipient: { "@id": `${SITE_URL}/#organization` },
+      recipient: { "@id": `${siteUrl}/#organization` },
     },
     contactPoint: {
       "@type": "ContactPoint",
@@ -130,15 +148,15 @@ export function organizationSchema(site: ResolvedSiteSettings) {
   };
 }
 
-export function websiteSchema(site: ResolvedSiteSettings) {
+export function websiteSchema(site: ResolvedSiteSettings, siteUrl = SITE_URL) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "@id": `${SITE_URL}/#website`,
+    "@id": `${siteUrl}/#website`,
     name: site.siteName,
-    url: SITE_URL,
+    url: siteUrl,
     inLanguage: "en-US",
-    publisher: { "@id": `${SITE_URL}/#organization` },
+    publisher: { "@id": `${siteUrl}/#organization` },
   };
 }
 
@@ -147,13 +165,15 @@ export function webPageSchema({
   description,
   path,
   schemaType = "WebPage",
+  siteUrl = SITE_URL,
 }: {
   title: string;
   description: string;
   path: string;
   schemaType?: SeoMeta["schemaType"];
+  siteUrl?: string;
 }) {
-  const url = absoluteUrl(path);
+  const url = absoluteUrl(path, siteUrl);
 
   return {
     "@context": "https://schema.org",
@@ -163,12 +183,12 @@ export function webPageSchema({
     description,
     url,
     inLanguage: "en-US",
-    isPartOf: { "@id": `${SITE_URL}/#website` },
-    publisher: { "@id": `${SITE_URL}/#organization` },
+    isPartOf: { "@id": `${siteUrl}/#website` },
+    publisher: { "@id": `${siteUrl}/#organization` },
   };
 }
 
-export function breadcrumbSchema(items: BreadcrumbItem[]) {
+export function breadcrumbSchema(items: BreadcrumbItem[], siteUrl = SITE_URL) {
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -176,13 +196,16 @@ export function breadcrumbSchema(items: BreadcrumbItem[]) {
       "@type": "ListItem",
       position: index + 1,
       name: item.name,
-      item: absoluteUrl(item.path),
+      item: absoluteUrl(item.path, siteUrl),
     })),
   };
 }
 
-export function productSchema(product: StoreProductDetail | StoreProductCard) {
-  const url = absoluteUrl(product.url);
+export function productSchema(
+  product: StoreProductDetail | StoreProductCard,
+  siteUrl = SITE_URL,
+) {
+  const url = absoluteUrl(product.url, siteUrl);
 
   return {
     "@context": "https://schema.org",
@@ -193,7 +216,7 @@ export function productSchema(product: StoreProductDetail | StoreProductCard) {
       "fullDescription" in product && product.fullDescription
         ? product.fullDescription
         : product.description,
-    image: product.image ? absoluteUrl(product.image) : undefined,
+    image: product.image ? absoluteUrl(product.image, siteUrl) : undefined,
     url,
     brand: {
       "@type": "Brand",
@@ -210,13 +233,13 @@ export function productSchema(product: StoreProductDetail | StoreProductCard) {
               ? "https://schema.org/InStock"
               : "https://schema.org/OutOfStock",
             url,
-            seller: { "@id": `${SITE_URL}/#organization` },
+            seller: { "@id": `${siteUrl}/#organization` },
           }
         : undefined,
   };
 }
 
-export function productItemListSchema(products: StoreProductCard[]) {
+export function productItemListSchema(products: StoreProductCard[], siteUrl = SITE_URL) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -224,14 +247,14 @@ export function productItemListSchema(products: StoreProductCard[]) {
     itemListElement: products.map((product, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      url: absoluteUrl(product.url),
-      item: productSchema(product),
+      url: absoluteUrl(product.url, siteUrl),
+      item: productSchema(product, siteUrl),
     })),
   };
 }
 
-export function eventSchema(event: EventItem) {
-  const url = absoluteUrl(event.detailHref);
+export function eventSchema(event: EventItem, siteUrl = SITE_URL) {
+  const url = absoluteUrl(event.detailHref, siteUrl);
   const address = event.addressLines.length
     ? {
         "@type": "PostalAddress",
@@ -246,7 +269,7 @@ export function eventSchema(event: EventItem) {
     name: event.title,
     description: event.description || event.summary,
     url,
-    image: absoluteUrl(event.image),
+    image: absoluteUrl(event.image, siteUrl),
     startDate: event.startDateTime,
     endDate: event.endDateTime || undefined,
     eventStatus:
@@ -254,7 +277,7 @@ export function eventSchema(event: EventItem) {
         ? "https://schema.org/EventCompleted"
         : "https://schema.org/EventScheduled",
     eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-    organizer: { "@id": `${SITE_URL}/#organization` },
+    organizer: { "@id": `${siteUrl}/#organization` },
     location: {
       "@type": "Place",
       name: event.venueName,
@@ -272,7 +295,7 @@ export function eventSchema(event: EventItem) {
   };
 }
 
-export function eventItemListSchema(events: EventItem[]) {
+export function eventItemListSchema(events: EventItem[], siteUrl = SITE_URL) {
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -280,8 +303,8 @@ export function eventItemListSchema(events: EventItem[]) {
     itemListElement: events.map((event, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      url: absoluteUrl(event.detailHref),
-      item: eventSchema(event),
+      url: absoluteUrl(event.detailHref, siteUrl),
+      item: eventSchema(event, siteUrl),
     })),
   };
 }

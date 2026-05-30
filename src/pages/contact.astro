@@ -7,7 +7,7 @@ import {
   resolveSiteSettings,
 } from "../lib/wix-cms";
 import { isWixContactFormConfigured } from "../lib/wix-contact";
-import { breadcrumbSchema, truncateDescription } from "../lib/seo";
+import { breadcrumbSchema, getSiteUrl, truncateDescription } from "../lib/seo";
 
 const [siteSettings, heroContent] = await Promise.all([
   getSiteSettings(),
@@ -15,6 +15,7 @@ const [siteSettings, heroContent] = await Promise.all([
 ]);
 
 const site = resolveSiteSettings(siteSettings);
+const siteUrl = getSiteUrl(Astro.url.origin);
 
 const hero = {
   title: cmsText(heroContent?.title, "Get In Touch"),
@@ -48,7 +49,7 @@ const contactDescription = truncateDescription(hero.body);
     breadcrumbSchema([
       { name: "Home", path: "/" },
       { name: "Contact", path: "/contact" },
-    ]),
+    ], siteUrl),
   ]}
 >
   <!-- ===== PAGE HERO ===== -->

@@ -9,6 +9,7 @@ import {
 import { getStorefrontProducts } from "../lib/wix-store";
 import {
   breadcrumbSchema,
+  getSiteUrl,
   productItemListSchema,
   truncateDescription,
 } from "../lib/seo";
@@ -22,6 +23,7 @@ const [siteSettings, heroContent, freedomContent, storeProductsResult] =
   ]);
 
 const site = resolveSiteSettings(siteSettings);
+const siteUrl = getSiteUrl(Astro.url.origin);
 const products = storeProductsResult.products;
 const collections = storeProductsResult.collections ?? [];
 const productPrices = products
@@ -125,8 +127,8 @@ Astro.response.headers.set(
     breadcrumbSchema([
       { name: "Home", path: "/" },
       { name: "Marketplace", path: "/shop" },
-    ]),
-    productItemListSchema(products),
+    ], siteUrl),
+    productItemListSchema(products, siteUrl),
   ]}
 >
   <section class="bg-ember-50/40 pt-28 pb-12 lg:pt-36 lg:pb-16">
@@ -384,11 +386,11 @@ Astro.response.headers.set(
         <div class="flex flex-col rounded-3xl border border-ember-100 bg-white/80 p-8 shadow-xl shadow-ember-brand/10 backdrop-blur-sm">
           <p class="text-center text-xs font-semibold uppercase tracking-[0.25em] text-ember-600">A partnership</p>
           <div class="mt-7 flex items-center justify-center gap-5 sm:gap-7">
-            <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT — Fight Human Trafficking" class="h-12 w-auto sm:h-14" loading="lazy" decoding="async" />
+            <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT - Fight Human Trafficking" class="h-12 w-auto sm:h-14" width="2122" height="711" loading="lazy" decoding="async" />
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ember-brand text-white shadow-md shadow-ember-brand/30" aria-hidden="true">
               <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
             </div>
-            <img src="/assets/bre-logo.png" alt="Beauty REnewed" class="h-20 w-20 object-contain sm:h-24 sm:w-24" loading="lazy" decoding="async" />
+            <img src="/assets/bre-logo.webp" alt="Beauty REnewed" class="h-20 w-20 object-contain sm:h-24 sm:w-24" width="600" height="568" loading="lazy" decoding="async" />
           </div>
           <p class="mt-7 text-center text-sm leading-relaxed text-neutral-500">
             {freedom.caption}
