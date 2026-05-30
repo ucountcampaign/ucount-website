@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig } from "astro/config";
-import cloudflare from "@astrojs/cloudflare";
+import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
 
 const site = (
@@ -14,7 +14,7 @@ export default defineConfig({
   site,
   output: "server",
 
-  adapter: cloudflare(),
+  adapter: vercel(),
 
   image: {
     domains: ["static.wixstatic.com"],
