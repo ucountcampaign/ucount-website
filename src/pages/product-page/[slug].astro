@@ -20,6 +20,26 @@ const site = resolveSiteSettings(siteSettings);
 const siteUrl = getSiteUrl(Astro.url.origin);
 const checkoutStatus = Astro.url.searchParams.get("checkout");
 
+function marketplaceReturnHref(value: string | null): string {
+  if (!value) {
+    return "/shop";
+  }
+
+  try {
+    const url = new URL(value, siteUrl);
+
+    if (url.origin === siteUrl && url.pathname === "/shop") {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    return "/shop";
+  }
+
+  return "/shop";
+}
+
+const marketplaceHref = marketplaceReturnHref(Astro.url.searchParams.get("returnTo"));
+
 if (!product) {
   Astro.response.status = 404;
 }
@@ -45,19 +65,17 @@ const canCheckout =
   (!product?.manageVariants || availableVariants.length > 0);
 const variantJson = JSON.stringify(product?.variants ?? []).replace(/</g, "\\u003c");
 const nonVariantMax = product && !product.manageVariants ? product.stockQuantity : null;
-const imagesForPage = images.map((image, index) => {
-  const relatedVariants = visibleVariants.filter(
+const directlyRelatedImageVariants = images.map((image) =>
+  (product?.variants ?? []).filter(
     (variant) =>
       variant.image &&
       (variant.image.fullUrl === image.fullUrl ||
         variant.image.url === image.url ||
         variant.image.thumbnailUrl === image.thumbnailUrl),
-  );
-  const fallbackVariant =
-    relatedVariants.length === 0 && visibleVariants.length === images.length
-      ? visibleVariants[index]
-      : undefined;
-  const imageVariants = relatedVariants.length ? relatedVariants : fallbackVariant ? [fallbackVariant] : [];
+  ),
+);
+const imagesForPage = images.map((image, index) => {
+  const imageVariants = directlyRelatedImageVariants[index] ?? [];
   const availableVariant = imageVariants.find((variant) => variant.inStock);
   const primaryVariant = availableVariant ?? imageVariants[0];
   const isUnavailable = imageVariants.length > 0 && !availableVariant;
@@ -139,7 +157,7 @@ setPublicCacheControl(Astro.response.headers);
     <>
       <section class="bg-neutral-50 pt-28 pb-8 lg:pt-32">
         <div class="max-w-7xl mx-auto px-6 lg:px-8">
-          <a href="/shop" class="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 transition-colors hover:text-ember-brand">
+          <a href={marketplaceHref} class="inline-flex items-center gap-2 text-sm font-semibold text-neutral-500 transition-colors hover:text-ember-brand">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"/></svg>
             Marketplace
           </a>
@@ -230,7 +248,14 @@ setPublicCacheControl(Astro.response.headers);
               <p class="mt-6 text-base leading-relaxed text-neutral-600">{product.fullDescription}</p>
             )}
 
-            <form action="/api/checkout" method="POST" class="mt-8 space-y-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" data-checkout-form>
+            <form
+              action="/api/checkout"
+              method="POST"
+              class="mt-8 space-y-6 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm"
+              data-checkout-form
+              data-product-variants={variantJson}
+              data-non-variant-max={nonVariantMax ?? ""}
+            >
               <input type="hidden" name="productId" value={product.id} />
               <input type="hidden" name="productSlug" value={product.slug} />
 
@@ -342,13 +367,31 @@ setPublicCacheControl(Astro.response.headers);
         </div>
       </section>
 
-      <script define:vars={{ variantJson, nonVariantMax }}>
-        const variants = JSON.parse(variantJson);
+      <script>
+        (() => {
+        function initProductPage() {
+        const checkoutForm = document.querySelector("[data-checkout-form]");
+
+        if (!checkoutForm || checkoutForm.dataset.productInitialized === "true") {
+          return;
+        }
+
+        checkoutForm.dataset.productInitialized = "true";
+
+        let variants = [];
+
+        try {
+          variants = JSON.parse(checkoutForm.dataset.productVariants || "[]");
+        } catch {
+          variants = [];
+        }
+
+        const parsedNonVariantMax = Number.parseInt(checkoutForm.dataset.nonVariantMax || "", 10);
+        const nonVariantMax = Number.isFinite(parsedNonVariantMax) ? parsedNonVariantMax : null;
         const mainImage = document.getElementById("productMainImage");
         const mainImageLink = document.getElementById("productMainImageLink");
         const variantInput = document.getElementById("variantId");
         const variantError = document.querySelector("[data-variant-error]");
-        const checkoutForm = document.querySelector("[data-checkout-form]");
         const imageButtons = document.querySelectorAll("[data-image-button]");
         const imageStatus = document.querySelector("[data-image-status]");
         const quantityInput = document.querySelector("[data-quantity-input]");
@@ -584,6 +627,19 @@ setPublicCacheControl(Astro.response.headers);
           variantInput.value = "";
         }
 
+        function clearVariantSelection() {
+          if (!variantInput || !variantValueLabel) {
+            return;
+          }
+
+          variantInput.value = "";
+          variantValueLabel.textContent = "Select an option";
+          variantOptions.forEach((item) => {
+            item.setAttribute("aria-selected", "false");
+          });
+          setCheckoutAvailability(false);
+        }
+
         function setCheckoutAvailability(isSelectedVariantAvailable) {
           const baseEnabled = checkoutButton?.dataset.checkoutBaseEnabled === "true";
           const enabled = Boolean(baseEnabled && isSelectedVariantAvailable);
@@ -707,8 +763,9 @@ setPublicCacheControl(Astro.response.headers);
         imageButtons.forEach((button) => {
           button.addEventListener("click", () => {
             const variantId = button.dataset.imageVariantId || "";
-            const variantLabel = button.dataset.imageVariantLabel || "";
-            const variantInStock = button.dataset.imageVariantInStock === "true";
+            const variant = variants.find((item) => item.id === variantId);
+            const variantLabel = variant?.label || button.dataset.imageVariantLabel || "";
+            const variantInStock = variant ? variant.inStock : button.dataset.imageVariantInStock === "true";
 
             setActiveImageButton(button);
             setMainImage({
@@ -718,16 +775,20 @@ setPublicCacheControl(Astro.response.headers);
               alt: button.dataset.imageAlt || mainImage?.alt,
             });
 
-            if (variantId) {
+            if (variant) {
               setVariantSelection({
-                variantId,
+                variantId: variant.id,
                 label: variantLabel,
                 inStock: variantInStock,
               });
+            } else if (requiredSelect) {
+              clearVariantSelection();
             }
 
             setImageStatus(
-              variantId && !variantInStock
+              requiredSelect && !variant
+                ? "Select an available option before checkout."
+                : variantId && !variantInStock
                 ? `${variantLabel || "This option"} is out of stock.`
                 : "",
             );
@@ -847,6 +908,11 @@ setPublicCacheControl(Astro.response.headers);
         initCustomSelects();
         preloadGalleryImages();
         applyQuantityLimit();
+        }
+
+        initProductPage();
+        document.addEventListener("astro:page-load", initProductPage);
+        })();
       </script>
     </>
   ) : (
@@ -854,7 +920,7 @@ setPublicCacheControl(Astro.response.headers);
       <div class="max-w-3xl mx-auto px-6 text-center">
         <h1 class="font-display text-4xl font-bold text-neutral-900">Product not found</h1>
         <p class="mt-4 text-neutral-600">The marketplace item you requested is no longer available.</p>
-        <a href="/shop" class="mt-8 inline-flex items-center justify-center rounded-full bg-ember-brand px-6 py-3 font-display text-sm font-semibold text-white">
+        <a href={marketplaceHref} class="mt-8 inline-flex items-center justify-center rounded-full bg-ember-brand px-6 py-3 font-display text-sm font-semibold text-white">
           Back to Marketplace
         </a>
       </div>

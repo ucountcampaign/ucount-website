@@ -292,7 +292,7 @@ setPublicCacheControl(Astro.response.headers);
               hidden={index >= productsPerPage}
               class="group"
             >
-              <a href={product.url} class="block no-underline">
+              <a href={product.url} class="block no-underline" data-marketplace-product-link>
                 <div class="relative aspect-[4/5] overflow-hidden rounded-2xl bg-neutral-100">
                   <img
                     src={product.image}
@@ -408,29 +408,148 @@ setPublicCacheControl(Astro.response.headers);
   </section>
 
   <script define:vars={{ productsPerPage, minPrice, maxPrice }}>
-    const grid = document.getElementById("productGrid");
-    const cards = Array.from(document.querySelectorAll("[data-product-card]"));
-    const search = document.getElementById("productSearch");
-    const sort = document.getElementById("productSort");
-    const categoryButtons = Array.from(document.querySelectorAll("[data-category]"));
-    const minPriceInput = document.querySelector("[data-price-min]");
-    const maxPriceInput = document.querySelector("[data-price-max]");
-    const minPriceRange = document.querySelector("[data-price-min-range]");
-    const maxPriceRange = document.querySelector("[data-price-max-range]");
-    const priceRange = document.querySelector("[data-price-range]");
-    const priceRangeLabel = document.getElementById("priceRangeLabel");
-    const resultSummary = document.getElementById("productResultSummary");
-    const currentPageLabel = document.getElementById("productCurrentPage");
-    const emptyState = document.getElementById("productEmptyState");
-    const pagination = document.getElementById("productPagination");
-    const pageNumbers = document.querySelector("[data-page-numbers]");
-    const previousPageButton = document.querySelector("[data-page-prev]");
-    const nextPageButton = document.querySelector("[data-page-next]");
-    let activeCategory = "all";
-    let currentPage = 1;
+    (() => {
+    function initMarketplace() {
+      const grid = document.getElementById("productGrid");
 
-    const activeClass = ["bg-neutral-900", "text-white"];
-    const inactiveClass = ["border", "border-neutral-200", "bg-white", "text-neutral-600"];
+      if (!grid || grid.dataset.marketplaceInitialized === "true") {
+        return;
+      }
+
+      grid.dataset.marketplaceInitialized = "true";
+
+      const cards = Array.from(document.querySelectorAll("[data-product-card]"));
+      const productLinks = Array.from(document.querySelectorAll("[data-marketplace-product-link]"));
+      const search = document.getElementById("productSearch");
+      const sort = document.getElementById("productSort");
+      const categoryButtons = Array.from(document.querySelectorAll("[data-category]"));
+      const minPriceInput = document.querySelector("[data-price-min]");
+      const maxPriceInput = document.querySelector("[data-price-max]");
+      const minPriceRange = document.querySelector("[data-price-min-range]");
+      const maxPriceRange = document.querySelector("[data-price-max-range]");
+      const priceRange = document.querySelector("[data-price-range]");
+      const priceRangeLabel = document.getElementById("priceRangeLabel");
+      const resultSummary = document.getElementById("productResultSummary");
+      const currentPageLabel = document.getElementById("productCurrentPage");
+      const emptyState = document.getElementById("productEmptyState");
+      const pagination = document.getElementById("productPagination");
+      const pageNumbers = document.querySelector("[data-page-numbers]");
+      const previousPageButton = document.querySelector("[data-page-prev]");
+      const nextPageButton = document.querySelector("[data-page-next]");
+      let activeCategory = "all";
+      let currentPage = 1;
+
+      const activeClass = ["bg-neutral-900", "text-white"];
+      const inactiveClass = ["border", "border-neutral-200", "bg-white", "text-neutral-600"];
+
+      function readPositiveInteger(value, fallback) {
+        const parsed = Number.parseInt(value ?? "", 10);
+
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+      }
+
+      function currentMarketplacePath() {
+        return `${window.location.pathname}${window.location.search}`;
+      }
+
+      function updateProductReturnLinks() {
+        const returnTo = currentMarketplacePath();
+
+        productLinks.forEach((link) => {
+          const url = new URL(link.getAttribute("href") || "", window.location.origin);
+          url.searchParams.set("returnTo", returnTo);
+          link.href = `${url.pathname}${url.search}${url.hash}`;
+        });
+      }
+
+      function writeMarketplaceUrl() {
+        const url = new URL(window.location.href);
+        const query = search?.value.trim() ?? "";
+        const { lower, upper } = getPriceBounds();
+
+        if (currentPage > 1) {
+          url.searchParams.set("page", String(currentPage));
+        } else {
+          url.searchParams.delete("page");
+        }
+
+        if (query) {
+          url.searchParams.set("q", query);
+        } else {
+          url.searchParams.delete("q");
+        }
+
+        if (sort?.value && sort.value !== "featured") {
+          url.searchParams.set("sort", sort.value);
+        } else {
+          url.searchParams.delete("sort");
+        }
+
+        if (activeCategory !== "all") {
+          url.searchParams.set("category", activeCategory);
+        } else {
+          url.searchParams.delete("category");
+        }
+
+        if (lower !== minPrice) {
+          url.searchParams.set("min", String(lower));
+        } else {
+          url.searchParams.delete("min");
+        }
+
+        if (upper !== maxPrice) {
+          url.searchParams.set("max", String(upper));
+        } else {
+          url.searchParams.delete("max");
+        }
+
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+        updateProductReturnLinks();
+      }
+
+      function hydrateStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const query = params.get("q") ?? "";
+        const requestedSort = params.get("sort") ?? "featured";
+        const requestedCategory = params.get("category") ?? "all";
+
+        if (search) {
+          search.value = query;
+        }
+
+        if (sort) {
+          const select = sort.closest("[data-custom-select]");
+          const options = Array.from(select?.querySelectorAll("[data-custom-select-option]") ?? []);
+          const selectedOption = options.find((option) => option.dataset.value === requestedSort);
+          sort.value = selectedOption ? requestedSort : "featured";
+
+          if (selectedOption) {
+            const valueLabel = select?.querySelector("[data-custom-select-value]");
+
+            if (valueLabel) {
+              valueLabel.textContent = selectedOption.textContent?.trim() ?? "Featured";
+            }
+
+            options.forEach((option) => {
+              option.setAttribute("aria-selected", String(option === selectedOption));
+            });
+          }
+        }
+
+        if (categoryButtons.some((button) => button.dataset.category === requestedCategory)) {
+          activeCategory = requestedCategory;
+        }
+
+        if (minPriceInput) {
+          minPriceInput.value = params.get("min") ?? String(minPrice);
+        }
+
+        if (maxPriceInput) {
+          maxPriceInput.value = params.get("max") ?? String(maxPrice);
+        }
+
+        currentPage = readPositiveInteger(params.get("page"), 1);
+      }
 
     function initCustomSelects() {
       document.querySelectorAll("[data-custom-select]").forEach((select) => {
@@ -685,6 +804,7 @@ setPublicCacheControl(Astro.response.headers);
       }
 
       renderPagination(filteredCards.length);
+      writeMarketplaceUrl();
     }
 
     categoryButtons.forEach((button) => {
@@ -736,8 +856,15 @@ setPublicCacheControl(Astro.response.headers);
       grid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
-    initCustomSelects();
-    syncPriceControls();
-    applyFilters();
+      initCustomSelects();
+      hydrateStateFromUrl();
+      setActiveCategoryButton();
+      syncPriceControls();
+      applyFilters();
+    }
+
+    initMarketplace();
+    document.addEventListener("astro:page-load", initMarketplace);
+    })();
   </script>
 </BaseLayout>
