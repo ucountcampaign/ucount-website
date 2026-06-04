@@ -4,7 +4,9 @@ import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getStoreProductBySlug } from "../../lib/wix-store";
 import {
   breadcrumbSchema,
+  DEFAULT_SOCIAL_IMAGE,
   getSiteUrl,
+  openGraphWixImageUrl,
   productSchema,
   truncateDescription,
 } from "../../lib/seo";
@@ -111,6 +113,9 @@ const activeImageIndexCandidate = initialVariant
 const activeImageIndex = activeImageIndexCandidate >= 0 ? activeImageIndexCandidate : 0;
 const primaryImage =
   imagesForPage[activeImageIndex] ?? initialVariant?.image ?? images[0];
+const productShareImage = product
+  ? openGraphWixImageUrl(primaryImage?.fullUrl || primaryImage?.url || product.image)
+  : DEFAULT_SOCIAL_IMAGE;
 const productDescription = truncateDescription(
   product?.fullDescription ||
     product?.description ||
@@ -137,7 +142,7 @@ setPublicCacheControl(Astro.response.headers);
   meta={{
     description: productDescription,
     canonicalPath: product?.url || Astro.url.pathname,
-    image: primaryImage?.url || product?.image,
+    image: productShareImage,
     imageAlt: primaryImage?.alt || product?.imageAlt || "U COUNT Marketplace product",
     type: "product",
     schemaType: "ItemPage",

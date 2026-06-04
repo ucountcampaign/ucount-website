@@ -5,8 +5,10 @@ import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getEventBySlug, getEvents } from "../../lib/wix-events";
 import {
   breadcrumbSchema,
+  DEFAULT_SOCIAL_IMAGE,
   eventSchema,
   getSiteUrl,
+  openGraphWixImageUrl,
   truncateDescription,
 } from "../../lib/seo";
 import { setPublicCacheControl } from "../../lib/cache";
@@ -70,27 +72,9 @@ const detailImageClass =
     ? "h-auto max-h-[42rem] max-w-full object-contain"
     : "h-full w-full object-cover";
 
-// Facebook/LinkedIn need an absolute, correctly-sized image to render a
-// preview card. Wix-hosted media can be transformed on the fly into a
-// standard 1.91:1 (1200x630) OG image, which also lets us declare exact
-// dimensions — LinkedIn often skips the preview when dimensions are missing.
-const OG_WIDTH = 1200;
-const OG_HEIGHT = 630;
-const wixMediaMatch = event.image.match(
-  /^https:\/\/static\.wixstatic\.com\/media\/([^/]+)$/,
-);
-const shareImage = wixMediaMatch
-  ? {
-      url: `https://static.wixstatic.com/media/${wixMediaMatch[1]}/v1/fill/w_${OG_WIDTH},h_${OG_HEIGHT},al_c,q_85/file.jpg`,
-      width: OG_WIDTH,
-      height: OG_HEIGHT,
-    }
-  : {
-      url: new URL(event.image, Astro.url.origin).toString(),
-      width: undefined as number | undefined,
-      height: undefined as number | undefined,
-    };
-const shareImageUrl = shareImage.url;
+const shareImageUrl = event.image.startsWith("https://static.wixstatic.com/")
+  ? openGraphWixImageUrl(event.image)
+  : event.image || DEFAULT_SOCIAL_IMAGE;
 const metaDescription = truncateDescription(event.summary || event.description);
 const shareLinks = [
   {
@@ -157,8 +141,6 @@ const eventFocus = (
   ]}
 >
   <Fragment slot="head">
-    {shareImage.width && <meta property="og:image:width" content={String(shareImage.width)} />}
-    {shareImage.height && <meta property="og:image:height" content={String(shareImage.height)} />}
     <script is:inline>
       // Runs in <head> before the body paints. If we arrived here intending to
       // land on the event content, hide the page up front so the user never

@@ -1,5 +1,5 @@
 import type { EventItem } from "./wix-events";
-import type { ResolvedSiteSettings } from "./wix-cms";
+import type { PageContent, ResolvedSiteSettings } from "./wix-cms";
 import type { StoreProductCard, StoreProductDetail } from "./wix-store";
 
 function normalizeSiteUrl(value: string | undefined): string {
@@ -20,15 +20,19 @@ const configuredSiteUrl = normalizeSiteUrl(
 
 export const SITE_URL = configuredSiteUrl || "http://localhost:4321";
 
+export const SOCIAL_IMAGE_WIDTH = 1200;
+export const SOCIAL_IMAGE_HEIGHT = 630;
 export const DEFAULT_SOCIAL_IMAGE = "/assets/events/ucount-marketplace-boutique-borderless.jpg";
 export const DEFAULT_SOCIAL_IMAGE_ALT =
-  "U COUNT marketplace goods supporting anti-trafficking prevention, awareness, and restoration";
+  "U COUNT anti-trafficking work through prevention, awareness, restoration, and marketplace support";
 
 export type SeoMeta = {
   description?: string;
   canonicalPath?: string;
   image?: string;
   imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
   type?: string;
   keywords?: string[];
   noindex?: boolean;
@@ -77,6 +81,65 @@ export function absoluteUrl(path = "/", siteUrl = SITE_URL): string {
   }
 
   return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export function openGraphWixImageUrl(
+  imageUrl: string | null | undefined,
+  {
+    width = SOCIAL_IMAGE_WIDTH,
+    height = SOCIAL_IMAGE_HEIGHT,
+    quality = 85,
+  }: { width?: number; height?: number; quality?: number } = {},
+): string {
+  if (!imageUrl) {
+    return "";
+  }
+
+  try {
+    const url = new URL(imageUrl);
+
+    if (!url.hostname.endsWith("wixstatic.com")) {
+      return imageUrl;
+    }
+
+    const mediaId = url.pathname.match(/\/media\/([^/]+)/i)?.[1];
+
+    if (!mediaId) {
+      return imageUrl;
+    }
+
+    return `https://static.wixstatic.com/media/${mediaId}/v1/fill/w_${width},h_${height},al_c,q_${quality},enc_auto/file.jpg`;
+  } catch {
+    return imageUrl;
+  }
+}
+
+function firstNonEmptyText(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    const trimmed = value?.trim();
+
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+
+  return "";
+}
+
+export function resolveHeroSocialImage(
+  heroContent: PageContent | null | undefined,
+  fallbackHeroContent?: PageContent | null,
+  localFallback = DEFAULT_SOCIAL_IMAGE,
+): string {
+  return openGraphWixImageUrl(
+    firstNonEmptyText(
+      heroContent?.image,
+      heroContent?.backgroundImage,
+      fallbackHeroContent?.image,
+      fallbackHeroContent?.backgroundImage,
+      localFallback,
+    ),
+  );
 }
 
 export function safeJsonLd(data: unknown): string {

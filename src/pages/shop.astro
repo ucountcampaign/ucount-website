@@ -11,14 +11,16 @@ import {
   breadcrumbSchema,
   getSiteUrl,
   productItemListSchema,
+  resolveHeroSocialImage,
   truncateDescription,
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
-const [siteSettings, heroContent, freedomContent, storeProductsResult] =
+const [siteSettings, heroContent, homeHeroContent, freedomContent, storeProductsResult] =
   await Promise.all([
     getSiteSettings(),
     getPageSection("shop", "hero"),
+    getPageSection("home", "hero"),
     getPageSection("shop", "freedom-supply-chain"),
     getStorefrontProducts(),
   ]);
@@ -49,6 +51,11 @@ const hero = {
     "U COUNT Marketplace empowers survivors of human trafficking by providing economic opportunity through handmade products. Every purchase supports alternative and sustainable income with dignity and hope.",
   ),
 };
+const heroShareImage = resolveHeroSocialImage(
+  heroContent,
+  homeHeroContent,
+  "/assets/events/ucount-marketplace-boutique-borderless.jpg",
+);
 
 const shopDescription = truncateDescription(hero.body);
 
@@ -111,7 +118,7 @@ setPublicCacheControl(Astro.response.headers);
     description: shopDescription,
     canonicalPath: "/shop",
     schemaType: "CollectionPage",
-    image: "/assets/events/ucount-marketplace-boutique-borderless.jpg",
+    image: heroShareImage,
     imageAlt: "U COUNT Marketplace boutique goods",
     keywords: [
       "U COUNT Marketplace",

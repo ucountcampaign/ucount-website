@@ -7,12 +7,18 @@ import {
   resolveSiteSettings,
 } from "../lib/wix-cms";
 import { isWixContactFormConfigured } from "../lib/wix-contact";
-import { breadcrumbSchema, getSiteUrl, truncateDescription } from "../lib/seo";
+import {
+  breadcrumbSchema,
+  getSiteUrl,
+  resolveHeroSocialImage,
+  truncateDescription,
+} from "../lib/seo";
 import SocialLinks from "../components/SocialLinks.astro";
 
-const [siteSettings, heroContent] = await Promise.all([
+const [siteSettings, heroContent, homeHeroContent] = await Promise.all([
   getSiteSettings(),
   getPageSection("contact", "hero"),
+  getPageSection("home", "hero"),
 ]);
 
 const site = resolveSiteSettings(siteSettings);
@@ -25,6 +31,11 @@ const hero = {
     "We'd love to hear from you. Whether you want to volunteer, partner with us, or just learn more — reach out.",
   ),
 };
+const heroShareImage = resolveHeroSocialImage(
+  heroContent,
+  homeHeroContent,
+  "/assets/ucount-logo.jpg",
+);
 
 const status = Astro.url.searchParams.get("status");
 const isContactFormConfigured = isWixContactFormConfigured();
@@ -42,7 +53,7 @@ const contactDescription = truncateDescription(hero.body);
     description: contactDescription,
     canonicalPath: "/contact",
     schemaType: "ContactPage",
-    image: "/assets/ucount-logo.jpg",
+    image: heroShareImage,
     imageAlt: "U COUNT logo",
     keywords: ["contact U COUNT", "volunteer anti-trafficking", "Fort Collins nonprofit"],
   }}

@@ -15,13 +15,15 @@ import {
   breadcrumbSchema,
   eventItemListSchema,
   getSiteUrl,
+  resolveHeroSocialImage,
   truncateDescription,
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
-const [siteSettings, heroContent, eventsResult] = await Promise.all([
+const [siteSettings, heroContent, homeHeroContent, eventsResult] = await Promise.all([
   getSiteSettings(),
   getPageSection("events", "hero"),
+  getPageSection("home", "hero"),
   getEvents(),
 ]);
 
@@ -35,6 +37,11 @@ const hero = {
     "Shop the Marketplace, join community education, and stay connected to opportunities that help prevent trafficking and restore dignity.",
   ),
 };
+const heroShareImage = resolveHeroSocialImage(
+  heroContent,
+  homeHeroContent,
+  "/assets/photos/IMG_4722.jpg",
+);
 const eventsDescription = truncateDescription(hero.body);
 
 const upcomingEvents = eventsResult.upcomingEvents;
@@ -85,7 +92,7 @@ setPublicCacheControl(Astro.response.headers);
     description: eventsDescription,
     canonicalPath: "/events",
     schemaType: "CollectionPage",
-    image: "/assets/photos/IMG_4722.jpg",
+    image: heroShareImage,
     imageAlt: "U COUNT community event",
     keywords: [
       "U COUNT events",
