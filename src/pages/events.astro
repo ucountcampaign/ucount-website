@@ -354,18 +354,23 @@ Astro.response.headers.set(
   )}
 
   <script>
-    document.querySelectorAll("[data-event-show-more]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const listName = button.getAttribute("data-event-show-more");
-        const list = listName
-          ? document.querySelector(`[data-event-list="${listName}"]`)
-          : null;
+    function initEventShowMore() {
+      document.querySelectorAll("[data-event-show-more]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const listName = button.getAttribute("data-event-show-more");
+          const list = listName
+            ? document.querySelector(`[data-event-list="${listName}"]`)
+            : null;
 
-        list?.querySelectorAll("[data-event-card][hidden]").forEach((card) => {
-          card.removeAttribute("hidden");
+          list?.querySelectorAll("[data-event-card][hidden]").forEach((card) => {
+            card.removeAttribute("hidden");
+          });
+          button.remove();
         });
-        button.remove();
       });
-    });
+    }
+
+    initEventShowMore();
+    document.addEventListener("astro:page-load", initEventShowMore);
   </script>
 </BaseLayout>

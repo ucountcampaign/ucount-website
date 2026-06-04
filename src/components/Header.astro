@@ -102,15 +102,20 @@ const mobileClass = (page?: string) =>
 </nav>
 
 <script>
-  const mobileMenu = document.getElementById("mobileMenu");
-  const toggles = document.querySelectorAll("[data-mobile-menu-toggle]");
+  function initMobileMenu() {
+    const mobileMenu = document.getElementById("mobileMenu");
+    const toggles = document.querySelectorAll("[data-mobile-menu-toggle]");
 
-  toggles.forEach((toggle) => {
-    toggle.addEventListener("click", () => {
-      const isOpen = mobileMenu?.classList.toggle("open") ?? false;
-      toggles.forEach((button) => {
-        button.setAttribute("aria-expanded", String(isOpen));
+    toggles.forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        const isOpen = mobileMenu?.classList.toggle("open") ?? false;
+        toggles.forEach((button) => {
+          button.setAttribute("aria-expanded", String(isOpen));
+        });
       });
     });
-  });
+  }
+
+  initMobileMenu();
+  document.addEventListener("astro:page-load", initMobileMenu);
 </script>

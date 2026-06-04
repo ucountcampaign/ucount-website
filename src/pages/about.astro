@@ -272,24 +272,29 @@ const aboutDescription = truncateDescription(hero.body);
   </section>
 
   <script>
-    document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
-      const button = toggle;
-      const card = button.closest("[data-team-card]");
-      const panelId = button.getAttribute("aria-controls");
-      const panel = panelId ? document.getElementById(panelId) : null;
+    function initBioToggles() {
+      document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
+        const button = toggle;
+        const card = button.closest("[data-team-card]");
+        const panelId = button.getAttribute("aria-controls");
+        const panel = panelId ? document.getElementById(panelId) : null;
 
-      if (!card || !panel) {
-        return;
-      }
+        if (!card || !panel) {
+          return;
+        }
 
-      button.addEventListener("click", () => {
-        const isOpen = button.getAttribute("aria-expanded") === "true";
-        const nextOpen = !isOpen;
+        button.addEventListener("click", () => {
+          const isOpen = button.getAttribute("aria-expanded") === "true";
+          const nextOpen = !isOpen;
 
-        button.setAttribute("aria-expanded", String(nextOpen));
-        card.setAttribute("data-bio-open", String(nextOpen));
-        panel.setAttribute("aria-hidden", String(!nextOpen));
+          button.setAttribute("aria-expanded", String(nextOpen));
+          card.setAttribute("data-bio-open", String(nextOpen));
+          panel.setAttribute("aria-hidden", String(!nextOpen));
+        });
       });
-    });
+    }
+
+    initBioToggles();
+    document.addEventListener("astro:page-load", initBioToggles);
   </script>
 </BaseLayout>
