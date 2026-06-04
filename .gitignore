@@ -3,10 +3,11 @@
 
 # build output
 dist/
+.vercel/
+.next/
 
 # generated types
 .astro/
-.next/
 
 # dependencies
 node_modules/
