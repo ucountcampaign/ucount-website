@@ -17,6 +17,7 @@ import {
   getSiteUrl,
   truncateDescription,
 } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [siteSettings, heroContent, eventsResult] = await Promise.all([
   getSiteSettings(),
@@ -73,10 +74,7 @@ const mapHref = (event: EventItem) =>
     [event.venueName, ...event.addressLines].join(" "),
   )}`;
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
-);
+setPublicCacheControl(Astro.response.headers);
 ---
 
 <BaseLayout

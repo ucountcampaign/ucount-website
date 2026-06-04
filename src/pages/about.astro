@@ -10,6 +10,7 @@ import {
   getValues,
 } from "../lib/wix-cms";
 import { breadcrumbSchema, getSiteUrl, truncateDescription } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [
   siteSettings,
@@ -31,6 +32,7 @@ const [
 
 const site = resolveSiteSettings(siteSettings);
 const siteUrl = getSiteUrl(Astro.url.origin);
+setPublicCacheControl(Astro.response.headers);
 
 const hero = {
   title: cmsText(heroContent?.title, "Who We Are"),

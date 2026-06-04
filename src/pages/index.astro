@@ -14,6 +14,7 @@ import {
 } from "../lib/wix-cms";
 import { createWixImageSrcSet, resizeWixImageUrl } from "../lib/images";
 import { truncateDescription } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [
   siteSettings,
@@ -306,10 +307,7 @@ const homeDescription = truncateDescription(
   "U COUNT fights human trafficking with hope, courage, and justice through prevention, awareness, restoration, partners, and a shop-with-purpose marketplace.",
 );
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
-);
+setPublicCacheControl(Astro.response.headers);
 
 const donateCta = {
   title: cmsText(

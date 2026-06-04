@@ -1,5 +1,10 @@
 import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import * as items from "@wix/wix-data-items-sdk";
+import {
+  siteCacheErrorTtlMs,
+  siteCacheStaleTtlMs,
+  siteCacheTtlMs,
+} from "./cache";
 
 type CmsRecord = Record<string, unknown>;
 
@@ -155,10 +160,6 @@ type WixQuery = {
   find: (options: { consistentRead: boolean }) => Promise<{ items: unknown[] }>;
 };
 
-const cmsCacheTtlMs = 5 * 60 * 1000;
-const cmsStaleTtlMs = 60 * 60 * 1000;
-const cmsErrorCacheTtlMs = 30 * 1000;
-
 type CmsCacheEntry<T> = {
   expiresAt: number;
   staleUntil: number;
@@ -278,7 +279,7 @@ function getCachedCmsValue<T>(
     .catch((error) => {
       onError(error);
 
-      const retryAt = Date.now() + cmsErrorCacheTtlMs;
+      const retryAt = Date.now() + siteCacheErrorTtlMs;
 
       if (
         previousValue?.resolvedValue !== undefined &&
@@ -302,8 +303,8 @@ function getCachedCmsValue<T>(
     });
 
   nextEntry = {
-    expiresAt: now + cmsCacheTtlMs,
-    staleUntil: now + cmsStaleTtlMs,
+    expiresAt: now + siteCacheTtlMs,
+    staleUntil: now + siteCacheStaleTtlMs,
     value,
   };
   cmsCache.set(key, nextEntry);

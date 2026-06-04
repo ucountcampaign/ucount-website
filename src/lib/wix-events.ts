@@ -1,4 +1,5 @@
 import { resizeWixImageUrl } from "./images";
+import { siteCacheTtlMs } from "./cache";
 
 export type EventLifecycle = "upcoming" | "past";
 
@@ -105,7 +106,6 @@ type WixEvent = {
   } | null;
 };
 
-const eventCacheTtlMs = 5 * 60 * 1000;
 const marketplaceBoutiqueImageId = "dc65de_cbfbc80860444ed4bd8c9cec3ab039ef~mv2.jpg";
 const marketplaceBoutiqueImage = "/assets/events/ucount-marketplace-boutique-borderless.webp";
 const eventPlaceholderImage = "/assets/events/ucount-event-placeholder.webp";
@@ -135,7 +135,7 @@ function getCachedEventValue<T>(key: string, load: () => Promise<T>): Promise<T>
   });
 
   eventCache.set(key, {
-    expiresAt: now + eventCacheTtlMs,
+    expiresAt: now + siteCacheTtlMs,
     value,
   });
 

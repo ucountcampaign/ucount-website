@@ -13,6 +13,7 @@ import {
   productItemListSchema,
   truncateDescription,
 } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [siteSettings, heroContent, freedomContent, storeProductsResult] =
   await Promise.all([
@@ -99,10 +100,7 @@ const freedom = {
   ctaUrl: cmsText(freedomContent?.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
 };
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
-);
+setPublicCacheControl(Astro.response.headers);
 ---
 
 <BaseLayout
