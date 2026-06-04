@@ -12,6 +12,8 @@ import {
   getSiteUrl,
   organizationSchema,
   safeJsonLd,
+  SOCIAL_IMAGE_HEIGHT,
+  SOCIAL_IMAGE_WIDTH,
   type SeoMeta,
   truncateDescription,
   webPageSchema,
@@ -37,6 +39,8 @@ const siteUrl = getSiteUrl(Astro.url.origin);
 const canonicalUrl = absoluteUrl(canonicalPath, siteUrl);
 const imageUrl = absoluteUrl(meta?.image || DEFAULT_SOCIAL_IMAGE, siteUrl);
 const imageAlt = meta?.imageAlt || DEFAULT_SOCIAL_IMAGE_ALT;
+const imageWidth = meta?.imageWidth ?? SOCIAL_IMAGE_WIDTH;
+const imageHeight = meta?.imageHeight ?? SOCIAL_IMAGE_HEIGHT;
 const robots = meta?.noindex ? "noindex, nofollow" : "index, follow";
 const jsonLd = [
   organizationSchema(site, siteUrl),
@@ -73,6 +77,8 @@ const jsonLd = [
   <meta property="og:image" content={imageUrl} />
   <meta property="og:image:secure_url" content={imageUrl} />
   <meta property="og:image:alt" content={imageAlt} />
+  <meta property="og:image:width" content={String(imageWidth)} />
+  <meta property="og:image:height" content={String(imageHeight)} />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />

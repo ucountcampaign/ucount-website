@@ -9,12 +9,18 @@ import {
   getTeamMembers,
   getValues,
 } from "../lib/wix-cms";
-import { breadcrumbSchema, getSiteUrl, truncateDescription } from "../lib/seo";
+import {
+  breadcrumbSchema,
+  getSiteUrl,
+  resolveHeroSocialImage,
+  truncateDescription,
+} from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
 const [
   siteSettings,
   heroContent,
+  homeHeroContent,
   missionContent,
   ctaContent,
   initiativesResult,
@@ -23,6 +29,7 @@ const [
 ] = await Promise.all([
   getSiteSettings(),
   getPageSection("about", "hero"),
+  getPageSection("home", "hero"),
   getPageSection("about", "mission-intro"),
   getPageSection("about", "cta"),
   getInitiatives("about"),
@@ -41,6 +48,11 @@ const hero = {
     "U COUNT is a 100% volunteer organization, including its leadership. Each of us volunteers our time and talents because we wholeheartedly believe that every person has value and deserves freedom.",
   ),
 };
+const heroShareImage = resolveHeroSocialImage(
+  heroContent,
+  homeHeroContent,
+  "/assets/photos/IMG_3234.jpg",
+);
 
 const mission = {
   eyebrow: cmsText(missionContent?.eyebrow, "What We Do"),
@@ -146,7 +158,7 @@ const aboutDescription = truncateDescription(hero.body);
     description: aboutDescription,
     canonicalPath: "/about",
     schemaType: "AboutPage",
-    image: "/assets/photos/IMG_3234.jpg",
+    image: heroShareImage,
     imageAlt: "U COUNT volunteers and leadership serving the anti-trafficking mission",
     keywords: ["U COUNT mission", "anti-trafficking volunteers", "human trafficking nonprofit"],
   }}
