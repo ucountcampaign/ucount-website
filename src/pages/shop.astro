@@ -281,7 +281,7 @@ Astro.response.headers.set(
           </p>
         </div>
 
-        <div id="productGrid" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div id="productGrid" class="mt-6 scroll-mt-24 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product, index) => (
             <article
               data-product-card
@@ -645,6 +645,7 @@ Astro.response.headers.set(
         button.addEventListener("click", () => {
           currentPage = page;
           applyFilters();
+          grid?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         pageNumbers.appendChild(button);
       }
@@ -728,11 +729,13 @@ Astro.response.headers.set(
     previousPageButton?.addEventListener("click", () => {
       currentPage = Math.max(1, currentPage - 1);
       applyFilters();
+      grid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     nextPageButton?.addEventListener("click", () => {
       const totalPages = Math.max(1, Math.ceil(getFilteredCards().length / productsPerPage));
       currentPage = Math.min(totalPages, currentPage + 1);
       applyFilters();
+      grid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     initCustomSelects();
