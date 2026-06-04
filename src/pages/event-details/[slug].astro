@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import SocialIcon from "../../components/SocialIcon.astro";
+import SocialLinks from "../../components/SocialLinks.astro";
 import { getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getEventBySlug, getEvents } from "../../lib/wix-events";
 import {
@@ -9,6 +9,7 @@ import {
   getSiteUrl,
   truncateDescription,
 } from "../../lib/seo";
+import { setPublicCacheControl } from "../../lib/cache";
 
 const [siteSettings, event, eventsResult] = await Promise.all([
   getSiteSettings(),
@@ -108,6 +109,7 @@ const shareLinks = [
     icon: "linkedin",
   },
 ] as const;
+setPublicCacheControl(Astro.response.headers);
 const eventFocus = (
   {
     Awareness: {
@@ -339,16 +341,12 @@ const eventFocus = (
         <div class="mt-8 border-t border-neutral-200 pt-6">
           <h3 class="font-display text-xl font-bold text-neutral-900">Spread the word</h3>
           <p class="mt-2 text-sm text-neutral-600">Know someone who should be here? Share this event and help grow our community of action.</p>
-          <div class="mt-4 flex items-center gap-3">
-            {shareLinks.map((link) => (
-              <a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label} title={link.label} class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 transition-colors hover:border-ember-brand hover:bg-ember-brand hover:text-white">
-                <SocialIcon name={link.icon} class="h-[18px] w-[18px]" />
-              </a>
-            ))}
-            <a href={`mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(shareUrl)}`} aria-label="Share by email" title="Share by email" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 transition-colors hover:border-ember-brand hover:bg-ember-brand hover:text-white">
-              <SocialIcon name="mail" class="h-[18px] w-[18px]" />
-            </a>
-          </div>
+          <SocialLinks
+            variant="share"
+            class="mt-4"
+            shareLinks={shareLinks}
+            mailHref={`mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(shareUrl)}`}
+          />
         </div>
       </aside>
     </div>

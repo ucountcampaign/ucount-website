@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { getSiteUrl } from "../lib/seo";
+import { publicCacheControl } from "../lib/cache";
 
 export const GET: APIRoute = ({ url }) => {
   const siteUrl = getSiteUrl(url.origin);
@@ -9,7 +10,7 @@ export const GET: APIRoute = ({ url }) => {
     {
       headers: {
         "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": publicCacheControl,
       },
     },
   );

@@ -1,5 +1,6 @@
 import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import { collections, products } from "@wix/stores";
+import { siteCacheTtlMs } from "./cache";
 
 const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
@@ -182,7 +183,6 @@ export type StoreProductDetail = StoreProductCard & {
 };
 
 const defaultAllProductsUrl = "/shop";
-const storeCacheTtlMs = 5 * 60 * 1000;
 
 type StoreCacheEntry<T> = {
   expiresAt: number;
@@ -225,7 +225,7 @@ function getCachedStoreValue<T>(key: string, load: () => Promise<T>): Promise<T>
   });
 
   storeCache.set(key, {
-    expiresAt: now + storeCacheTtlMs,
+    expiresAt: now + siteCacheTtlMs,
     value,
   });
 

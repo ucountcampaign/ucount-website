@@ -3,6 +3,8 @@
 
 # build output
 dist/
+.vercel/
+.next/
 
 # generated types
 .astro/

@@ -1,7 +1,7 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
 import { getSiteUrl } from "../lib/seo";
-import SocialIcon from "./SocialIcon.astro";
+import SocialLinks from "./SocialLinks.astro";
 
 type ActivePage = "home" | "about" | "contact" | "events" | "shop";
 
@@ -33,14 +33,7 @@ const publicSiteHost = new URL(publicSiteUrl).hostname.replace(/^www\./, "");
         <p class="text-neutral-400 text-sm max-w-sm leading-relaxed mt-4">
           {site.organizationSummary}
         </p>
-        <div class="flex items-center gap-4 mt-6">
-          <a href={site.facebookUrl} target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-white/5 hover:bg-ember-brand/20 flex items-center justify-center transition-colors group" aria-label="Facebook">
-            <SocialIcon name="facebook" class="h-5 w-5 text-neutral-400 transition-colors group-hover:text-ember-brand" />
-          </a>
-          <a href={site.instagramUrl} target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-full bg-white/5 hover:bg-ember-brand/20 flex items-center justify-center transition-colors group" aria-label="Instagram">
-            <SocialIcon name="instagram" class="h-5 w-5 text-neutral-400 transition-colors group-hover:text-ember-brand" />
-          </a>
-        </div>
+        <SocialLinks site={site} variant="footer" class="mt-6 gap-4" />
       </div>
 
       <div>

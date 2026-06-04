@@ -13,6 +13,7 @@ import {
   productItemListSchema,
   truncateDescription,
 } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [siteSettings, heroContent, freedomContent, storeProductsResult] =
   await Promise.all([
@@ -99,10 +100,7 @@ const freedom = {
   ctaUrl: cmsText(freedomContent?.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
 };
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
-);
+setPublicCacheControl(Astro.response.headers);
 ---
 
 <BaseLayout
@@ -281,7 +279,7 @@ Astro.response.headers.set(
           </p>
         </div>
 
-        <div id="productGrid" class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div id="productGrid" class="mt-6 scroll-mt-24 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product, index) => (
             <article
               data-product-card
@@ -341,10 +339,10 @@ Astro.response.headers.set(
           <p class="mt-2 text-sm text-neutral-500">Try a different category, search, or price range.</p>
         </div>
 
-        <nav id="productPagination" class="mt-10 flex flex-wrap items-center justify-center gap-2" aria-label="Product pagination">
-          <button type="button" class="ui-page-button" data-page-prev>Previous</button>
-          <div class="flex flex-wrap justify-center gap-2" data-page-numbers></div>
-          <button type="button" class="ui-page-button" data-page-next>Next</button>
+        <nav id="productPagination" class="mt-10 grid grid-cols-2 items-center gap-3 sm:flex sm:flex-wrap sm:justify-center sm:gap-2" aria-label="Product pagination">
+          <div class="order-first col-span-2 flex flex-wrap items-center justify-center gap-2 sm:contents" data-page-numbers></div>
+          <button type="button" class="ui-page-button order-2 w-full sm:order-first sm:w-auto" data-page-prev>Previous</button>
+          <button type="button" class="ui-page-button order-3 w-full sm:order-last sm:w-auto" data-page-next>Next</button>
         </nav>
         </>
       ) : (
@@ -645,6 +643,7 @@ Astro.response.headers.set(
         button.addEventListener("click", () => {
           currentPage = page;
           applyFilters();
+          grid?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         pageNumbers.appendChild(button);
       }
@@ -728,11 +727,13 @@ Astro.response.headers.set(
     previousPageButton?.addEventListener("click", () => {
       currentPage = Math.max(1, currentPage - 1);
       applyFilters();
+      grid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     nextPageButton?.addEventListener("click", () => {
       const totalPages = Math.max(1, Math.ceil(getFilteredCards().length / productsPerPage));
       currentPage = Math.min(totalPages, currentPage + 1);
       applyFilters();
+      grid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     initCustomSelects();

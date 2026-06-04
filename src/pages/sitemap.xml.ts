@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
 import { absoluteUrl, getSiteUrl } from "../lib/seo";
+import { publicCacheControl } from "../lib/cache";
 
 type SitemapEntry = {
   loc: string;
@@ -70,7 +71,7 @@ ${entries.map(sitemapEntry).join("\n")}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      "Cache-Control": publicCacheControl,
     },
   });
 };

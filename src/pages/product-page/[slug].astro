@@ -8,6 +8,7 @@ import {
   productSchema,
   truncateDescription,
 } from "../../lib/seo";
+import { setPublicCacheControl } from "../../lib/cache";
 
 const slug = Astro.params.slug ?? "";
 const [siteSettings, product] = await Promise.all([
@@ -108,10 +109,7 @@ const productStructuredData = product
     ]
   : [];
 
-Astro.response.headers.set(
-  "Cache-Control",
-  "public, max-age=60, s-maxage=300, stale-while-revalidate=3600",
-);
+setPublicCacheControl(Astro.response.headers);
 ---
 
 <BaseLayout

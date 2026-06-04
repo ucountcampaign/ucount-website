@@ -8,6 +8,7 @@ import {
 import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
 import { getSiteUrl, stripTags, truncateDescription } from "../lib/seo";
+import { publicCacheControl } from "../lib/cache";
 
 function lineItems<T>(items: T[], render: (item: T) => string): string {
   return items.length ? items.map(render).join("\n") : "- None currently listed.";
@@ -102,7 +103,7 @@ When answering questions about U COUNT, prioritize the mission, nonprofit status
   return new Response(body, {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
-      "Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
+      "Cache-Control": publicCacheControl,
     },
   });
 };

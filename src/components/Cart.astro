@@ -3,7 +3,7 @@ const checkoutErrorMessage =
   "Checkout could not be started. Please try again or contact U COUNT for help.";
 ---
 
-<div data-cart-root>
+<div data-cart-root transition:persist>
   <div
     data-cart-overlay
     class="fixed inset-0 z-[60] bg-neutral-900/50 opacity-0 pointer-events-none transition-opacity duration-300"
@@ -371,13 +371,22 @@ const checkoutErrorMessage =
     document.body.style.overflow = "";
   }
 
-  document.querySelectorAll("[data-cart-open]").forEach((trigger) => {
-    trigger.addEventListener("click", (event) => {
-      event.preventDefault();
-      render();
-      openDrawer();
+  function bindCartOpenButtons() {
+    document.querySelectorAll("[data-cart-open]").forEach((trigger) => {
+      if (trigger.hasAttribute("data-cart-open-bound")) {
+        return;
+      }
+
+      trigger.setAttribute("data-cart-open-bound", "true");
+      trigger.addEventListener("click", (event) => {
+        event.preventDefault();
+        render();
+        openDrawer();
+      });
     });
-  });
+  }
+
+  bindCartOpenButtons();
 
   root?.querySelectorAll("[data-cart-close]").forEach((trigger) => {
     trigger.addEventListener("click", (event) => {
@@ -442,5 +451,10 @@ const checkoutErrorMessage =
     if (event.key === STORAGE_KEY) {
       render();
     }
+  });
+
+  document.addEventListener("astro:page-load", () => {
+    bindCartOpenButtons();
+    render();
   });
 </script>

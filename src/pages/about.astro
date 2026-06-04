@@ -10,6 +10,7 @@ import {
   getValues,
 } from "../lib/wix-cms";
 import { breadcrumbSchema, getSiteUrl, truncateDescription } from "../lib/seo";
+import { setPublicCacheControl } from "../lib/cache";
 
 const [
   siteSettings,
@@ -31,6 +32,7 @@ const [
 
 const site = resolveSiteSettings(siteSettings);
 const siteUrl = getSiteUrl(Astro.url.origin);
+setPublicCacheControl(Astro.response.headers);
 
 const hero = {
   title: cmsText(heroContent?.title, "Who We Are"),
@@ -49,14 +51,18 @@ const mission = {
   ),
 };
 
+const primaryCtaLabel = cmsText(ctaContent?.primaryCtaLabel, "Contact Us");
 const cta = {
   title: cmsText(ctaContent?.title, "Get Involved"),
   body: cmsText(
     ctaContent?.body,
     "Every person carries dignity. Join us in pursuing justice with hope, compassion, courage, and community.",
   ),
-  primaryCtaLabel: cmsText(ctaContent?.primaryCtaLabel, "Contact Us"),
-  primaryCtaUrl: cmsText(ctaContent?.primaryCtaUrl, "/contact"),
+  primaryCtaLabel,
+  primaryCtaUrl: normalizeCtaUrl(
+    primaryCtaLabel,
+    cmsText(ctaContent?.primaryCtaUrl, "/contact"),
+  ),
   secondaryCtaLabel: cmsText(ctaContent?.secondaryCtaLabel, "Donate"),
   secondaryCtaUrl: cmsText(ctaContent?.secondaryCtaUrl, site.primaryDonateUrl),
 };
@@ -119,6 +125,16 @@ const accentClass = (token: string) =>
     "gold-400": "bg-gold-500/20 text-gold-400",
     "sky-400": "bg-sky-500/20 text-sky-400",
   })[token] ?? "bg-ember-brand/20 text-ember-brand";
+
+function normalizeCtaUrl(label: string, url: string) {
+  const value = url.trim();
+
+  if (/contact/i.test(label) || /contact-us-1/i.test(value)) {
+    return "/contact";
+  }
+
+  return value || "/contact";
+}
 
 const aboutDescription = truncateDescription(hero.body);
 ---
@@ -258,24 +274,29 @@ const aboutDescription = truncateDescription(hero.body);
   </section>
 
   <script>
-    document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
-      const button = toggle;
-      const card = button.closest("[data-team-card]");
-      const panelId = button.getAttribute("aria-controls");
-      const panel = panelId ? document.getElementById(panelId) : null;
+    function initBioToggles() {
+      document.querySelectorAll("[data-bio-toggle]").forEach((toggle) => {
+        const button = toggle;
+        const card = button.closest("[data-team-card]");
+        const panelId = button.getAttribute("aria-controls");
+        const panel = panelId ? document.getElementById(panelId) : null;
 
-      if (!card || !panel) {
-        return;
-      }
+        if (!card || !panel) {
+          return;
+        }
 
-      button.addEventListener("click", () => {
-        const isOpen = button.getAttribute("aria-expanded") === "true";
-        const nextOpen = !isOpen;
+        button.addEventListener("click", () => {
+          const isOpen = button.getAttribute("aria-expanded") === "true";
+          const nextOpen = !isOpen;
 
-        button.setAttribute("aria-expanded", String(nextOpen));
-        card.setAttribute("data-bio-open", String(nextOpen));
-        panel.setAttribute("aria-hidden", String(!nextOpen));
+          button.setAttribute("aria-expanded", String(nextOpen));
+          card.setAttribute("data-bio-open", String(nextOpen));
+          panel.setAttribute("aria-hidden", String(!nextOpen));
+        });
       });
-    });
+    }
+
+    initBioToggles();
+    document.addEventListener("astro:page-load", initBioToggles);
   </script>
 </BaseLayout>
