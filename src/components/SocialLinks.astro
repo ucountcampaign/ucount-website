@@ -1,0 +1,79 @@
+---
+import type { ResolvedSiteSettings } from "../lib/wix-cms";
+import {
+  getSocialLinks,
+  type SocialLink,
+  type SocialLinkName,
+} from "../lib/social-links";
+import SocialIcon from "./SocialIcon.astro";
+
+type SocialLinksVariant = "footer" | "surface" | "share";
+
+type ShareLink = {
+  label: string;
+  href: string;
+  icon: SocialLinkName;
+};
+
+const {
+  site,
+  variant = "surface",
+  class: className = "",
+  shareLinks,
+  mailHref,
+} = Astro.props as {
+  site?: ResolvedSiteSettings;
+  variant?: SocialLinksVariant;
+  class?: string;
+  shareLinks?: ReadonlyArray<ShareLink>;
+  mailHref?: string;
+};
+
+const linkClassName: Record<SocialLinksVariant, string> = {
+  footer:
+    "group flex h-10 w-10 items-center justify-center rounded-full bg-white/5 transition-colors hover:bg-ember-brand/20",
+  surface:
+    "group flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white transition-colors hover:bg-ember-brand/10",
+  share:
+    "inline-flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-neutral-700 transition-colors hover:border-ember-brand hover:bg-ember-brand hover:text-white",
+};
+
+const iconClassName: Record<SocialLinksVariant, string> = {
+  footer: "h-5 w-5 text-neutral-400 transition-colors group-hover:text-ember-brand",
+  surface: "h-5 w-5 text-neutral-500 transition-colors group-hover:text-ember-brand",
+  share: "h-[18px] w-[18px]",
+};
+
+const links: ReadonlyArray<SocialLink | ShareLink> =
+  variant === "share" && shareLinks
+    ? shareLinks
+    : site
+      ? getSocialLinks(site)
+      : [];
+---
+
+<div class:list={["flex items-center gap-3", className]}>
+  {links.map((link) => (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={link.label}
+      title={link.label}
+      class={linkClassName[variant]}
+    >
+      <SocialIcon name={link.icon} class={iconClassName[variant]} />
+    </a>
+  ))}
+
+  {variant === "share" && mailHref && (
+    <a
+      href={mailHref}
+      aria-label="Share by email"
+      title="Share by email"
+      class={linkClassName.share}
+    >
+      <SocialIcon name="mail" class={iconClassName.share} />
+    </a>
+  )}
+</div>

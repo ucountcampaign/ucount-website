@@ -49,14 +49,18 @@ const mission = {
   ),
 };
 
+const primaryCtaLabel = cmsText(ctaContent?.primaryCtaLabel, "Contact Us");
 const cta = {
   title: cmsText(ctaContent?.title, "Get Involved"),
   body: cmsText(
     ctaContent?.body,
     "Every person carries dignity. Join us in pursuing justice with hope, compassion, courage, and community.",
   ),
-  primaryCtaLabel: cmsText(ctaContent?.primaryCtaLabel, "Contact Us"),
-  primaryCtaUrl: cmsText(ctaContent?.primaryCtaUrl, "/contact"),
+  primaryCtaLabel,
+  primaryCtaUrl: normalizeCtaUrl(
+    primaryCtaLabel,
+    cmsText(ctaContent?.primaryCtaUrl, "/contact"),
+  ),
   secondaryCtaLabel: cmsText(ctaContent?.secondaryCtaLabel, "Donate"),
   secondaryCtaUrl: cmsText(ctaContent?.secondaryCtaUrl, site.primaryDonateUrl),
 };
@@ -119,6 +123,16 @@ const accentClass = (token: string) =>
     "gold-400": "bg-gold-500/20 text-gold-400",
     "sky-400": "bg-sky-500/20 text-sky-400",
   })[token] ?? "bg-ember-brand/20 text-ember-brand";
+
+function normalizeCtaUrl(label: string, url: string) {
+  const value = url.trim();
+
+  if (/contact/i.test(label) || /contact-us-1/i.test(value)) {
+    return "/contact";
+  }
+
+  return value || "/contact";
+}
 
 const aboutDescription = truncateDescription(hero.body);
 ---
