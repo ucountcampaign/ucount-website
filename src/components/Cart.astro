@@ -373,6 +373,11 @@ const checkoutErrorMessage =
 
   function bindCartOpenButtons() {
     document.querySelectorAll("[data-cart-open]").forEach((trigger) => {
+      if (trigger.hasAttribute("data-cart-open-bound")) {
+        return;
+      }
+
+      trigger.setAttribute("data-cart-open-bound", "true");
       trigger.addEventListener("click", (event) => {
         event.preventDefault();
         render();

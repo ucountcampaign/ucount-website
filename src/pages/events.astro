@@ -356,6 +356,11 @@ Astro.response.headers.set(
   <script>
     function initEventShowMore() {
       document.querySelectorAll("[data-event-show-more]").forEach((button) => {
+        if (button.hasAttribute("data-event-show-more-bound")) {
+          return;
+        }
+
+        button.setAttribute("data-event-show-more-bound", "true");
         button.addEventListener("click", () => {
           const listName = button.getAttribute("data-event-show-more");
           const list = listName
