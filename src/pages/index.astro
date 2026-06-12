@@ -77,6 +77,10 @@ const useBrandedHeroTitle =
 const missionIntro = {
   eyebrow: cmsText(missionContent?.eyebrow, "Why We Fight"),
   title: cmsText(missionContent?.title, "Human trafficking is modern-day slavery."),
+  subtitle: cmsText(
+    missionContent?.subtitle,
+    "They are why we fight — with hope, courage, compassion, and grace.",
+  ),
   body: cmsText(
     missionContent?.body,
     "When a person is forced, deceived, or coerced into being sold for sex, they become a victim. Nearly 28 million people are trafficked worldwide. Every statistic represents a person with dignity, strength, and the ability to persevere. We respond with compassion, collaborate with trusted partners, and keep our vision fixed on justice.",
@@ -1392,7 +1396,7 @@ const donateCta = {
             {missionIntro.body}
           </p>
           <p class="font-display font-semibold text-xl text-ember-300 italic">
-            They are why we fight — with hope, courage, compassion, and grace.
+            {missionIntro.subtitle}
           </p>
         </div>
 
