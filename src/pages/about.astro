@@ -101,14 +101,9 @@ const defaultInitiatives = [
 const defaultValues = [
   "Hope",
   "Courage",
-  "Collaborate",
-  "Community",
   "Compassion",
   "Dignity",
   "Justice",
-  "Grace",
-  "Persevere",
-  "Vision",
 ].map((title) => ({ title }));
 
 const initiatives = (initiativesResult.length ? initiativesResult : defaultInitiatives).map(
@@ -119,9 +114,12 @@ const initiatives = (initiativesResult.length ? initiativesResult : defaultIniti
   }),
 );
 
-const values = (valuesResult.length ? valuesResult : defaultValues).map((value) => ({
-  title: cmsText(value.title, ""),
-}));
+const values = (valuesResult.length ? valuesResult : defaultValues)
+  .map((value) => ({
+    title: cmsText(value.title, ""),
+  }))
+  .filter((value) => value.title)
+  .slice(0, 5);
 
 const teamMembers = teamMembersResult.map((member) => ({
   name: cmsText(member.name, ""),
@@ -259,9 +257,11 @@ const aboutDescription = truncateDescription(hero.body);
         <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">Our Values</h2>
       </div>
 
-      <div class="flex flex-wrap justify-center gap-4">
-        {values.map((value) => (
-          <span class="px-6 py-3 rounded-full bg-ember-50 border border-ember-200 text-ember-700 font-display font-semibold text-base">{value.title}</span>
+      <div class="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+        {values.map((value, index) => (
+          <span class={`rounded-full border border-ember-200 bg-ember-50 px-6 py-3 text-center font-display text-base font-semibold text-ember-700 lg:col-span-2 ${index === 3 ? "lg:col-start-2" : ""}`}>
+            {value.title}
+          </span>
         ))}
       </div>
     </div>
