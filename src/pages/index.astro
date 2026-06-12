@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { getFeaturedStoreProducts } from "../lib/wix-store";
 import {
+  cmsImageUrl,
   cmsText,
   cmsValue,
   getImpactAllocations,
@@ -60,11 +61,11 @@ const hero = {
     heroContent?.secondaryCtaUrl,
     "https://www.paypal.com/donate/?hosted_button_id=47BPT2WKXDFCN",
   ),
-  image: cmsText(
+  image: cmsImageUrl(
     heroContent?.image,
     "https://static.wixstatic.com/media/5117f1_7aad5514ad5f47bd8f100fc9b21c13cb~mv2.jpeg/v1/fit/w_960,h_722,q_82,enc_auto/file.jpg",
   ),
-  backgroundImage: cmsText(
+  backgroundImage: cmsImageUrl(
     heroContent?.backgroundImage,
     "https://static.wixstatic.com/media/5117f1_83830d03ce464fa0bd4a61c37c37bb5c~mv2.jpeg/v1/fill/w_480,h_360,al_c,q_82,enc_auto/file.jpg",
   ),
@@ -270,7 +271,7 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
   (partner) => ({
     id: cmsText(partner.slug, cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-")),
     name: cmsText(partner.name, "Partner"),
-    logo: cmsText(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
+    logo: cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
     tagline: cmsText(partner.tagline, ""),
     description: cmsText(partner.description, ""),
     url: cmsText(partner.websiteUrl, "#"),

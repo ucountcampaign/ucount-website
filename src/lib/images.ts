@@ -5,6 +5,75 @@ export type WixImageResizeOptions = {
   quality?: number;
 };
 
+function wixImageUriToUrl(value: string): string {
+  const match = value.match(/^wix:image:\/\/v1\/([^/#?]+)/i);
+
+  return match ? `https://static.wixstatic.com/media/${match[1]}` : "";
+}
+
+export function resolveWixImageUrl(value: unknown, fallback = ""): string {
+  if (!value) {
+    return fallback;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      return fallback;
+    }
+
+    return wixImageUriToUrl(trimmed) || trimmed;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveWixImageUrl(item)).find(Boolean) ?? fallback;
+  }
+
+  if (typeof value !== "object") {
+    return fallback;
+  }
+
+  const record = value as Record<string, unknown>;
+  const imageData =
+    record.imageData && typeof record.imageData === "object"
+      ? (record.imageData as Record<string, unknown>)
+      : null;
+  const image =
+    imageData?.image && typeof imageData.image === "object"
+      ? (imageData.image as Record<string, unknown>)
+      : null;
+  const src =
+    image?.src && typeof image.src === "object"
+      ? (image.src as Record<string, unknown>)
+      : null;
+  const srcId = typeof src?.id === "string" ? src.id.trim() : "";
+
+  if (srcId && /^[A-Za-z0-9_.~-]+$/.test(srcId)) {
+    return `https://static.wixstatic.com/media/${srcId}`;
+  }
+
+  const directId = typeof record.id === "string" ? record.id.trim() : "";
+
+  if (directId && /^[A-Za-z0-9_.~-]+$/.test(directId) && /(?:~mv2|\.\w{2,5}$)/i.test(directId)) {
+    return `https://static.wixstatic.com/media/${directId}`;
+  }
+
+  return [
+    "url",
+    "fullUrl",
+    "src",
+    "image",
+    "media",
+    "file",
+    "thumbnail",
+    "nodes",
+    "children",
+  ]
+    .map((key) => resolveWixImageUrl(record[key]))
+    .find(Boolean) ?? fallback;
+}
+
 export function resizeWixImageUrl(
   url: string,
   {
@@ -14,11 +83,13 @@ export function resizeWixImageUrl(
     quality = 82,
   }: WixImageResizeOptions,
 ): string {
+  const resolvedUrl = resolveWixImageUrl(url, url);
+
   try {
-    const parsedUrl = new URL(url);
+    const parsedUrl = new URL(resolvedUrl);
 
     if (!parsedUrl.hostname.endsWith("wixstatic.com")) {
-      return url;
+      return resolvedUrl;
     }
 
     const transform =
@@ -38,7 +109,7 @@ export function resizeWixImageUrl(
 
     return parsedUrl.toString();
   } catch {
-    return url;
+    return resolvedUrl;
   }
 }
 

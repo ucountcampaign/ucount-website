@@ -5,6 +5,7 @@ import {
   siteCacheStaleTtlMs,
   siteCacheTtlMs,
 } from "./cache";
+import { resolveWixImageUrl } from "./images";
 
 type CmsRecord = Record<string, unknown>;
 
@@ -427,4 +428,8 @@ export function cmsValue(
   }
 
   return value?.trim() || fallback;
+}
+
+export function cmsImageUrl(value: unknown, fallback: string): string {
+  return resolveWixImageUrl(value, fallback);
 }

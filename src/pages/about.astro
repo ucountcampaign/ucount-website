@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import {
+  cmsImageUrl,
   cmsText,
   getInitiatives,
   getPageSection,
@@ -124,7 +125,7 @@ const values = (valuesResult.length ? valuesResult : defaultValues)
 const teamMembers = teamMembersResult.map((member) => ({
   name: cmsText(member.name, ""),
   role: cmsText(member.role, ""),
-  headshot: cmsText(member.headshot, ""),
+  headshot: cmsImageUrl(member.headshot, ""),
   shortBio: cmsText(member.shortBio, ""),
   longBio: cmsText(member.longBio, cmsText(member.shortBio, "")),
 }));

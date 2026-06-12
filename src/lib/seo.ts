@@ -1,6 +1,7 @@
 import type { EventItem } from "./wix-events";
 import type { PageContent, ResolvedSiteSettings } from "./wix-cms";
 import type { StoreProductCard, StoreProductDetail } from "./wix-store";
+import { resolveWixImageUrl } from "./images";
 
 function normalizeSiteUrl(value: string | undefined): string {
   const trimmed = value?.trim().replace(/\/+$/, "") ?? "";
@@ -91,26 +92,28 @@ export function openGraphWixImageUrl(
     quality = 85,
   }: { width?: number; height?: number; quality?: number } = {},
 ): string {
-  if (!imageUrl) {
+  const resolvedImageUrl = resolveWixImageUrl(imageUrl);
+
+  if (!resolvedImageUrl) {
     return "";
   }
 
   try {
-    const url = new URL(imageUrl);
+    const url = new URL(resolvedImageUrl);
 
     if (!url.hostname.endsWith("wixstatic.com")) {
-      return imageUrl;
+      return resolvedImageUrl;
     }
 
     const mediaId = url.pathname.match(/\/media\/([^/]+)/i)?.[1];
 
     if (!mediaId) {
-      return imageUrl;
+      return resolvedImageUrl;
     }
 
     return `https://static.wixstatic.com/media/${mediaId}/v1/fill/w_${width},h_${height},al_c,q_${quality},enc_auto/file.jpg`;
   } catch {
-    return imageUrl;
+    return resolvedImageUrl;
   }
 }
 
