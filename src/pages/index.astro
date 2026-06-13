@@ -1319,7 +1319,7 @@ const donateCta = {
 
         <div class="flex flex-wrap gap-8 lg:gap-12 mt-16 pt-8 border-t border-neutral-200 fade-up" style="animation-delay: 0.55s;">
           {heroStats.map((stat) => (
-            <div>
+            <div class="text-center">
               <span class={`font-display font-bold text-3xl lg:text-4xl ${stat.theme === "neutral" ? "text-neutral-900" : "text-ember-brand"}`}>{stat.value}</span>
               <p class="text-xs uppercase tracking-wider text-neutral-500 mt-1">{stat.label}</p>
             </div>
