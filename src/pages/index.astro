@@ -22,6 +22,8 @@ const [
   heroContent,
   missionContent,
   impactContent,
+  partnersContent,
+  shopContent,
   donateContent,
   heroStatsResult,
   impactStatsResult,
@@ -35,6 +37,8 @@ const [
   getPageSection("home", "hero"),
   getPageSection("home", "mission-intro"),
   getPageSection("home", "impact-intro"),
+  getPageSection("home", "partners-intro"),
+  getPageSection("home", "shop-intro"),
   getPageSection("home", "donate-cta"),
   getImpactStats("hero"),
   getImpactStats("impact"),
@@ -209,6 +213,26 @@ const impactIntro = {
   eyebrow: cmsText(impactContent?.eyebrow, "Our Impact in 2025"),
   title: cmsText(impactContent?.title, "Courageous impact. Dignity restored."),
 };
+
+const partnersIntro = {
+  eyebrow: cmsText(partnersContent?.eyebrow, "Our Partners"),
+  title: cmsText(partnersContent?.title, "Courageous partners we stand with."),
+  body: cmsText(
+    partnersContent?.body,
+    "We collaborate with partners whose courage, compassion, and vision we have personally witnessed.",
+  ),
+};
+
+const shopIntro = {
+  eyebrow: cmsText(shopContent?.eyebrow, "Marketplace"),
+  title: cmsText(shopContent?.title, "Shop with purpose."),
+  body: cmsText(
+    shopContent?.body,
+    "Every purchase supports women who are at-risk or survivors — strengthening dignity, community, and renewed hope for a brighter future.",
+  ),
+};
+
+const shopTitleMatch = shopIntro.title.match(/^(Shop with )(purpose\.)$/i);
 
 const impactTitleParts = impactIntro.title.split(". ");
 const impactStats = (
@@ -1477,10 +1501,10 @@ const donateCta = {
       <div class="mb-14">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-12 h-px bg-ember-brand"></div>
-          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">Our Partners</span>
+          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{partnersIntro.eyebrow}</span>
         </div>
-        <h2 class="font-display font-bold text-3xl lg:text-4xl text-neutral-900 mb-3">Courageous partners we stand with.</h2>
-        <p class="text-neutral-500 max-w-2xl">We collaborate with partners whose courage, compassion, and vision we have personally witnessed.</p>
+        <h2 class="font-display font-bold text-3xl lg:text-4xl text-neutral-900 mb-3">{partnersIntro.title}</h2>
+        <p class="text-neutral-500 max-w-2xl">{partnersIntro.body}</p>
       </div>
 
       <div id="partnerStage" class="partner-stage"></div>
@@ -1494,12 +1518,18 @@ const donateCta = {
         <div>
           <div class="flex items-center gap-3 mb-4">
             <div class="w-12 h-px bg-ember-brand"></div>
-            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">Marketplace</span>
+            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{shopIntro.eyebrow}</span>
           </div>
           <h2 class="font-display font-bold text-4xl lg:text-5xl text-neutral-900">
-            Shop with <span class="text-ember-brand">purpose.</span>
+            {shopTitleMatch ? (
+              <>
+                {shopTitleMatch[1]}<span class="text-ember-brand">{shopTitleMatch[2]}</span>
+              </>
+            ) : (
+              shopIntro.title
+            )}
           </h2>
-          <p class="text-neutral-500 text-lg mt-3 max-w-lg">Every purchase supports women who are at-risk or survivors — strengthening dignity, community, and renewed hope for a brighter future.</p>
+          <p class="text-neutral-500 text-lg mt-3 max-w-lg">{shopIntro.body}</p>
         </div>
         <a href={storeProductsResult.allProductsUrl} class="group inline-flex items-center gap-2 text-ember-600 font-display font-semibold hover:text-ember-brand transition-colors whitespace-nowrap">
           View All Products
