@@ -23,6 +23,8 @@ const [
   heroContent,
   homeHeroContent,
   missionContent,
+  leadershipContent,
+  valuesContent,
   ctaContent,
   initiativesResult,
   teamMembersResult,
@@ -32,6 +34,8 @@ const [
   getPageSection("about", "hero"),
   getPageSection("home", "hero"),
   getPageSection("about", "mission-intro"),
+  getPageSection("about", "leadership-intro"),
+  getPageSection("about", "values-intro"),
   getPageSection("about", "cta"),
   getInitiatives("about"),
   getTeamMembers(),
@@ -62,6 +66,16 @@ const mission = {
     missionContent?.body,
     "We fight global and local sex trafficking through prevention, awareness, and restoration. We do this with hope, courage, compassion, and vision across Global Projects, Local Efforts, and Marketplace.",
   ),
+};
+
+const leadershipIntro = {
+  eyebrow: cmsText(leadershipContent?.eyebrow, "Leadership"),
+  title: cmsText(leadershipContent?.title, "DIRECTIONAL TEAM"),
+};
+
+const valuesIntro = {
+  eyebrow: cmsText(valuesContent?.eyebrow, "What Drives Us"),
+  title: cmsText(valuesContent?.title, "Our Values"),
 };
 
 const primaryCtaLabel = cmsText(ctaContent?.primaryCtaLabel, "Contact Us");
@@ -217,10 +231,10 @@ const aboutDescription = truncateDescription(hero.body);
       <div class="text-center mb-16">
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="w-12 h-px bg-ember-brand"></div>
-          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">Leadership</span>
+          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{leadershipIntro.eyebrow}</span>
           <div class="w-12 h-px bg-ember-brand"></div>
         </div>
-        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">DIRECTIONAL TEAM</h2>
+        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">{leadershipIntro.title}</h2>
       </div>
 
       <div class="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -252,10 +266,10 @@ const aboutDescription = truncateDescription(hero.body);
       <div class="text-center mb-12">
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="w-12 h-px bg-ember-brand"></div>
-          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">What Drives Us</span>
+          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{valuesIntro.eyebrow}</span>
           <div class="w-12 h-px bg-ember-brand"></div>
         </div>
-        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">Our Values</h2>
+        <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">{valuesIntro.title}</h2>
       </div>
 
       <div class="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">

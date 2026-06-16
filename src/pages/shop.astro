@@ -98,10 +98,9 @@ const freedom = {
     freedomContent?.body,
     "The Freedom Supply Chain is a partnership between U COUNT and Beauty REnewed (bRE), LLC, built to create a sustainable supply chain and sales outlets for those affected by human trafficking. U COUNT, a 501(c)(3) funded by donations and product sales, uses insight from bRE to source goods, while Beauty REnewed develops the products and visits each site to procure raw goods, refine the designs, and support the women who make them.",
   ),
-  caption: cmsText(
-    freedomContent?.subtitle,
+  partnershipLabel: cmsText(freedomContent?.subtitle, "A partnership"),
+  caption:
     "U COUNT funds and orders goods from sites employing women at risk of, or surviving, trafficking. Beauty REnewed develops the products and works directly with each site.",
-  ),
   videoEmbedUrl: toVideoEmbedUrl(cmsText(freedomContent?.videoUrl, "432015030")),
   ctaLabel: cmsText(freedomContent?.primaryCtaLabel, "Shop at bRE"),
   ctaUrl: cmsText(freedomContent?.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
@@ -389,7 +388,7 @@ setPublicCacheControl(Astro.response.headers);
         </div>
 
         <div class="flex flex-col rounded-3xl border border-ember-100 bg-white/80 p-8 shadow-xl shadow-ember-brand/10 backdrop-blur-sm">
-          <p class="text-center text-base font-semibold uppercase tracking-[0.25em] text-ember-600">A partnership</p>
+          <p class="text-center text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.partnershipLabel}</p>
           <div class="mt-7 flex items-center justify-center gap-5 sm:gap-7">
             <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT - Fight Human Trafficking" class="h-12 w-auto sm:h-14" width="2122" height="711" loading="lazy" decoding="async" />
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ember-brand text-white shadow-md shadow-ember-brand/30" aria-hidden="true">

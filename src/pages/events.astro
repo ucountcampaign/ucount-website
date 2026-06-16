@@ -20,10 +20,13 @@ import {
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
-const [siteSettings, heroContent, homeHeroContent, eventsResult] = await Promise.all([
+const [siteSettings, heroContent, homeHeroContent, featuredContent, calendarContent, pastEventsContent, eventsResult] = await Promise.all([
   getSiteSettings(),
   getPageSection("events", "hero"),
   getPageSection("home", "hero"),
+  getPageSection("events", "featured-event-intro"),
+  getPageSection("events", "calendar-intro"),
+  getPageSection("events", "past-events-intro"),
   getEvents(),
 ]);
 
@@ -36,6 +39,16 @@ const hero = {
     heroContent?.body,
     "Shop the Marketplace, join community education, and stay connected to opportunities that help prevent trafficking and restore dignity.",
   ),
+};
+const featuredIntro = {
+  eyebrow: cmsText(featuredContent?.eyebrow, "Featured Event"),
+};
+const calendarIntro = {
+  eyebrow: cmsText(calendarContent?.eyebrow, "Calendar"),
+  title: cmsText(calendarContent?.title, "Upcoming Events"),
+};
+const pastEventsIntro = {
+  eyebrow: cmsText(pastEventsContent?.eyebrow, "Recent Past Events"),
 };
 const heroShareImage = resolveHeroSocialImage(
   heroContent,
@@ -144,7 +157,7 @@ setPublicCacheControl(Astro.response.headers);
         <div>
           <div class="mb-4 flex items-center gap-3">
             <div class="h-px w-12 bg-ember-brand"></div>
-            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">Featured Event</span>
+            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{featuredIntro.eyebrow}</span>
           </div>
           <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">
             {featuredEvent.title}
@@ -206,9 +219,9 @@ setPublicCacheControl(Astro.response.headers);
         <div>
           <div class="mb-4 flex items-center gap-3">
             <div class="h-px w-12 bg-ember-brand"></div>
-            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">Calendar</span>
+            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{calendarIntro.eyebrow}</span>
           </div>
-          <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">Upcoming Events</h2>
+          <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">{calendarIntro.title}</h2>
         </div>
         <a href="/contact" class="inline-flex w-fit items-center gap-2 rounded-full border-2 border-neutral-900 px-6 py-3 font-display text-sm font-semibold text-neutral-900 transition-colors hover:bg-neutral-900 hover:text-white">
           Volunteer
@@ -319,7 +332,7 @@ setPublicCacheControl(Astro.response.headers);
       <div class="mx-auto max-w-7xl px-6 lg:px-8">
         <div class="mb-8 flex items-center gap-3">
           <div class="h-px w-12 bg-neutral-300"></div>
-          <span class="text-base font-semibold uppercase tracking-[0.25em] text-neutral-500">Recent Past Events</span>
+          <span class="text-base font-semibold uppercase tracking-[0.25em] text-neutral-500">{pastEventsIntro.eyebrow}</span>
         </div>
 
         <div class="grid gap-4" data-event-list="past">
