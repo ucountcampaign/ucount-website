@@ -1,6 +1,7 @@
 import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import { collections, products } from "@wix/stores";
 import { siteCacheTtlMs } from "./cache";
+import { getEnv } from "./runtime-env";
 
 const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
@@ -233,8 +234,8 @@ function getCachedStoreValue<T>(key: string, load: () => Promise<T>): Promise<T>
 }
 
 function createWixStoreClient() {
-  const apiKey = import.meta.env.WIX_STORES_API_KEY;
-  const siteId = import.meta.env.WIX_SITE_ID;
+  const apiKey = getEnv("WIX_STORES_API_KEY");
+  const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
     return null;
@@ -913,8 +914,8 @@ export async function getStoreProductBySlug(
 }
 
 function wixApiHeaders() {
-  const apiKey = import.meta.env.WIX_STORES_API_KEY;
-  const siteId = import.meta.env.WIX_SITE_ID;
+  const apiKey = getEnv("WIX_STORES_API_KEY");
+  const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
     throw new Error("WIX_STORES_API_KEY or WIX_SITE_ID is not set.");
@@ -947,7 +948,7 @@ async function wixApiRequest<T>(path: string, body?: unknown): Promise<T> {
 }
 
 function resolveCheckoutUrl(checkoutUrl: string): string {
-  const checkoutBaseUrl = import.meta.env.WIX_CHECKOUT_BASE_URL?.trim();
+  const checkoutBaseUrl = getEnv("WIX_CHECKOUT_BASE_URL");
 
   if (!checkoutBaseUrl) {
     return checkoutUrl;
