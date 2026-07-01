@@ -16,7 +16,7 @@ function normalizeSiteUrl(value: string | undefined): string {
 const configuredSiteUrl = normalizeSiteUrl(
   import.meta.env.PUBLIC_SITE_URL ||
   import.meta.env.SITE_URL ||
-    import.meta.env.VERCEL_URL,
+    import.meta.env.CF_PAGES_URL,
 );
 
 export const SITE_URL = configuredSiteUrl || "http://localhost:4321";

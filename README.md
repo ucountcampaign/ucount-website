@@ -58,9 +58,9 @@ pnpm dev
 
 ## Runtime and caching
 
-Astro is configured with `output: "server"` and the Vercel adapter, so the
+Astro is configured with `output: "server"` and the Cloudflare adapter, so the
 marketplace, product pages, checkout API, and contact API render server-side on
-Vercel. Cache durations are centralized in `src/lib/cache.ts`. Wix store,
+Cloudflare Workers. Cache durations are centralized in `src/lib/cache.ts`. Wix store,
 events, and CMS reads are memoized in the serverless function process for 60
 seconds. Wix CMS reads keep stale successful values for one hour if Wix is
 temporarily unavailable, and short-cache failures for 30 seconds so a Wix
@@ -85,9 +85,24 @@ pnpm build
 
 ## Deployment
 
-This project is configured for Vercel through `@astrojs/vercel`. Add the same
-server-side environment variables in Vercel for Production, Preview, and
-Development as needed.
+This project is configured for Cloudflare Workers through `@astrojs/cloudflare`.
+It is not a static Cloudflare Pages deployment; the checkout/contact API routes
+and Wix-backed dynamic pages require the Worker runtime.
+
+Build and deploy with Wrangler:
+
+```sh
+pnpm run deploy
+```
+
+For a local production-like preview, build first and then run:
+
+```sh
+pnpm preview
+```
+
+Add the same server-side environment variables in Cloudflare Workers as needed.
+Set `PUBLIC_SITE_URL` to the canonical production origin.
 
 Do not copy `.env.local` or Wix-managed credentials from the old `ucount-headless` project into this repo.
 
