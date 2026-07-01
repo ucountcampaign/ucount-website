@@ -4,6 +4,8 @@
 # build output
 dist/
 .vercel/
+.wrangler/
+.wrangler-dry-run/
 .next/
 
 # generated types
