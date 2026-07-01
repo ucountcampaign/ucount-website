@@ -1,5 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ucount-self-headless",
-  "compatibility_date": "2026-04-15"
+  "compatibility_date": "2026-04-15",
+  "keep_vars": true,
+  "vars": {
+    "WIX_CONTACT_FORM_ID": "1a784f54-c174-4349-8d67-7dbf93214af5",
+    "WIX_CONTACT_FIELD_FIRST_NAME": "first_name_5b78",
+    "WIX_CONTACT_FIELD_LAST_NAME": "last_name_3ab0",
+    "WIX_CONTACT_FIELD_EMAIL": "email_df1a",
+    "WIX_CONTACT_FIELD_MESSAGE": "message"
+  }
 }
