@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "deploy": "pnpm run build && wrangler deploy --config dist/server/wrangler.json",
+    "deploy": "wrangler deploy --config dist/server/wrangler.json",
     "deploy:dry-run": "pnpm run build && wrangler deploy --config dist/server/wrangler.json --dry-run",
     "preview": "astro preview",
     "astro": "astro"
