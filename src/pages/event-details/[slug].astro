@@ -148,48 +148,6 @@ const eventFocus = (
     eventSchema(event, siteUrl),
   ]}
 >
-  <Fragment slot="head">
-    <script is:inline>
-      // Runs in <head> before the body paints. If we arrived here intending to
-      // land on the event content, hide the page up front so the user never
-      // sees the top-of-page state before we scroll — that flash is the jarring
-      // "jump". The body script positions the page and fades it back in.
-      (function () {
-        var id = "event-content";
-        var key = "ucount:event-detail-scroll-target";
-        var hold = window.location.hash === "#" + id;
-
-        try {
-          if (sessionStorage.getItem(key) === id) {
-            hold = true;
-          }
-          sessionStorage.removeItem(key);
-        } catch (error) {
-          // Storage access is best-effort.
-        }
-
-        if (!hold) {
-          return;
-        }
-
-        window.__eventScrollHold = true;
-
-        if ("scrollRestoration" in history) {
-          history.scrollRestoration = "manual";
-        }
-
-        var root = document.documentElement;
-        root.style.opacity = "0";
-
-        // Failsafe: never leave the page hidden if the body script fails to run.
-        window.setTimeout(function () {
-          root.style.transition = "opacity 0.25s ease";
-          root.style.opacity = "1";
-        }, 1500);
-      })();
-    </script>
-  </Fragment>
-
   <section class="relative overflow-hidden pt-28 text-white lg:pt-32">
     <img
       src={heroImage}
@@ -351,14 +309,14 @@ const eventFocus = (
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
           {forwardEvent && (
-            <a href={`${forwardEvent.detailHref}#event-content`} data-related-event-link class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+            <a href={forwardEvent.detailHref} class="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
               <p class="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">Next Event</p>
               <h3 class="mt-2 font-display text-xl font-bold text-neutral-900">{forwardEvent.title}</h3>
               <p class="mt-2 text-sm text-neutral-600">{forwardEvent.dateLabel}{forwardEvent.timeLabel && ` - ${forwardEvent.timeLabel}`}</p>
             </a>
           )}
           {backwardEvent && (
-            <a href={`${backwardEvent.detailHref}#event-content`} data-related-event-link class:list={[
+            <a href={backwardEvent.detailHref} class:list={[
               "rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md",
               !forwardEvent && "sm:col-start-2",
             ]}>
@@ -372,116 +330,14 @@ const eventFocus = (
     </section>
   )}
 
-  <script is:inline>
-    const eventContentId = "event-content";
-    const relatedScrollKey = "ucount:event-detail-scroll-target";
-
-    // Mark intent before navigating to a related event. The URL anchor keeps
-    // the destination shareable; this flag lets the next page correct the
-    // offset after fonts and images settle.
-    document.querySelectorAll("[data-related-event-link]").forEach((link) => {
-      link.addEventListener("click", () => {
-        try {
-          sessionStorage.setItem(relatedScrollKey, eventContentId);
-        } catch {
-          // Scroll positioning is a progressive enhancement.
-        }
-      });
-    });
-
-    const revealPage = () => {
-      const root = document.documentElement;
-
-      if (root.style.opacity === "0") {
-        root.style.transition = "opacity 0.25s ease";
-        root.style.opacity = "1";
+  <script>
+    const scrollEventDetailToTop = () => {
+      if (!window.location.hash) {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
       }
     };
 
-    // The head script set this flag (and hid the page) before first paint.
-    if (window.__eventScrollHold === true) {
-      let userMoved = false;
-      ["wheel", "touchstart", "keydown", "mousedown"].forEach((eventName) => {
-        window.addEventListener(
-          eventName,
-          () => {
-            userMoved = true;
-            revealPage();
-          },
-          { once: true, passive: true },
-        );
-      });
-
-      const headerOffset = () =>
-        window.matchMedia("(min-width: 1024px)").matches ? 96 : 80;
-
-      // Pin the content section into place. Running this every animation frame
-      // (before paint) means any layout shift from late-loading images or font
-      // swaps is corrected within the same frame — and because the page stays
-      // hidden until we reveal it, none of this positioning is ever visible.
-      const pinEventContent = () => {
-        if (userMoved) {
-          return;
-        }
-
-        const target = document.getElementById(eventContentId);
-
-        if (!target) {
-          return;
-        }
-
-        const targetTop = Math.max(
-          target.getBoundingClientRect().top + window.scrollY - headerOffset(),
-          0,
-        );
-
-        if (Math.abs(window.scrollY - targetTop) > 1) {
-          window.scrollTo({ top: targetTop, behavior: "auto" });
-        }
-      };
-
-      // The biggest source of "jump" is the hero heading reflowing when the web
-      // font finishes loading, which moves the target after we positioned. So we
-      // keep the page hidden until fonts are ready (that reflow happens while
-      // invisible), then pin to the final position and fade in — no visible jump.
-      let revealed = false;
-      const positionAndReveal = () => {
-        if (revealed) {
-          return;
-        }
-        revealed = true;
-        pinEventContent();
-        revealPage();
-      };
-
-      pinEventContent();
-
-      if (document.fonts && typeof document.fonts.ready?.then === "function") {
-        document.fonts.ready.then(() =>
-          requestAnimationFrame(() => requestAnimationFrame(positionAndReveal)),
-        );
-      } else {
-        requestAnimationFrame(() => requestAnimationFrame(positionAndReveal));
-      }
-
-      // Reveal on load and a hard cap so the page is never hidden too long.
-      window.addEventListener("load", () =>
-        requestAnimationFrame(positionAndReveal),
-      );
-      setTimeout(positionAndReveal, 1200);
-
-      // Keep correcting through any remaining shifts while hidden, and briefly
-      // after reveal (cap stops it on its own; user interaction releases it).
-      const startedAt = performance.now();
-      const holdUntilSettled = () => {
-        pinEventContent();
-
-        if (!userMoved && performance.now() - startedAt < 3000) {
-          requestAnimationFrame(holdUntilSettled);
-        }
-      };
-
-      requestAnimationFrame(holdUntilSettled);
-    }
+    scrollEventDetailToTop();
+    document.addEventListener("astro:page-load", scrollEventDetailToTop);
   </script>
 </BaseLayout>
