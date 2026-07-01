@@ -1,5 +1,6 @@
 import { resizeWixImageUrl } from "./images";
 import { siteCacheTtlMs } from "./cache";
+import { getEnv } from "./runtime-env";
 
 export type EventLifecycle = "upcoming" | "past";
 
@@ -143,10 +144,8 @@ function getCachedEventValue<T>(key: string, load: () => Promise<T>): Promise<T>
 }
 
 function getEventsApiConfig() {
-  const apiKey =
-    import.meta.env.WIX_EVENTS_API_KEY?.trim() ||
-    import.meta.env.WIX_DATA_API_KEY?.trim();
-  const siteId = import.meta.env.WIX_SITE_ID?.trim();
+  const apiKey = getEnv("WIX_EVENTS_API_KEY") || getEnv("WIX_DATA_API_KEY");
+  const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
     if (!missingEventsCredentialsWarningShown) {

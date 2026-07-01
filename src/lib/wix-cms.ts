@@ -6,6 +6,7 @@ import {
   siteCacheTtlMs,
 } from "./cache";
 import { resolveWixImageUrl } from "./images";
+import { getEnv } from "./runtime-env";
 
 type CmsRecord = Record<string, unknown>;
 
@@ -171,7 +172,7 @@ type CmsCacheEntry<T> = {
 const cmsCache = new Map<string, CmsCacheEntry<unknown>>();
 
 function getCollectionAliases(): Record<string, string> {
-  const rawAliases = import.meta.env.WIX_CMS_COLLECTION_ALIASES;
+  const rawAliases = getEnv("WIX_CMS_COLLECTION_ALIASES");
 
   if (!rawAliases) {
     return {};
@@ -199,8 +200,8 @@ function resolveCollectionId(collectionId: string): string {
 }
 
 function createWixDataClient() {
-  const apiKey = import.meta.env.WIX_DATA_API_KEY;
-  const siteId = import.meta.env.WIX_SITE_ID;
+  const apiKey = getEnv("WIX_DATA_API_KEY");
+  const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
     return null;

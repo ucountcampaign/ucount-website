@@ -1,3 +1,5 @@
+import { getEnv } from "./runtime-env";
+
 type ContactSubmission = {
   firstName: string;
   lastName: string;
@@ -34,17 +36,15 @@ export class WixContactSubmissionError extends Error {
 }
 
 function envValue(name: string): string {
-  const value = import.meta.env[name];
-
-  return typeof value === "string" ? value.trim() : "";
+  return getEnv(name);
 }
 
 function contactFieldMap() {
   return {
-    firstName: import.meta.env.WIX_CONTACT_FIELD_FIRST_NAME || "first_name",
-    lastName: import.meta.env.WIX_CONTACT_FIELD_LAST_NAME || "last_name",
-    email: import.meta.env.WIX_CONTACT_FIELD_EMAIL || "email",
-    message: import.meta.env.WIX_CONTACT_FIELD_MESSAGE || "message",
+    firstName: getEnv("WIX_CONTACT_FIELD_FIRST_NAME") || "first_name",
+    lastName: getEnv("WIX_CONTACT_FIELD_LAST_NAME") || "last_name",
+    email: getEnv("WIX_CONTACT_FIELD_EMAIL") || "email",
+    message: getEnv("WIX_CONTACT_FIELD_MESSAGE") || "message",
   };
 }
 
