@@ -733,9 +733,38 @@ const donateCta = {
     }
 
     .partner-logo-wrap--lg {
-      width: 4.75rem;
-      height: 4.75rem;
+      width: 8rem;
+      height: 8rem;
+      min-width: 8rem;
+      min-height: 8rem;
       border-radius: 1.25rem;
+    }
+
+    /* The spotlight's left column pairs the logo with the partner name and
+       centres both, so the identity reads as one block rather than a small
+       mark floating beside body copy. */
+    .partner-spotlight-identity {
+      display: flex;
+      min-height: 12rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #f0ede9;
+      border-radius: 1.5rem;
+      background: rgba(255, 255, 255, 0.82);
+      text-align: center;
+    }
+
+    .partner-spotlight-identity .partner-logo-wrap--lg {
+      border: 0;
+      border-radius: 1.5rem;
+    }
+
+    .partner-spotlight-identity .partner-title {
+      font-size: clamp(1.25rem, 2vw, 1.65rem);
+      line-height: 1.15;
     }
 
     .partner-logo {
@@ -1713,9 +1742,11 @@ const donateCta = {
         <div class="partner-spotlight-panel"${animate ? ' data-animate="true"' : ""}>
           <div class="partner-spotlight-meta">${metaLabel}</div>
           <div class="partner-spotlight-layout">
-            ${logoMarkup(partner, "lg")}
-            <div>
+            <div class="partner-spotlight-identity">
+              ${logoMarkup(partner, "lg")}
               <h3 class="partner-title">${partner.name}</h3>
+            </div>
+            <div>
               <p class="partner-spotlight-tagline">${partner.tagline}</p>
               <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
               ${ctaMarkup(partner)}
