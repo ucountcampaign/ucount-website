@@ -91,20 +91,27 @@ function toVideoEmbedUrl(input: string): string {
   return url;
 }
 
-const freedom = {
-  eyebrow: cmsText(freedomContent?.eyebrow, "Freedom Supply Chain"),
-  title: cmsText(freedomContent?.title, "Two organizations, one mission for freedom."),
-  body: cmsText(
-    freedomContent?.body,
-    "The Freedom Supply Chain is a partnership between U COUNT and Beauty REnewed (bRE), LLC, built to create a sustainable supply chain and sales outlets for those affected by human trafficking. U COUNT, a 501(c)(3) funded by donations and product sales, uses insight from bRE to source goods, while Beauty REnewed develops the products and visits each site to procure raw goods, refine the designs, and support the women who make them.",
-  ),
-  partnershipLabel: cmsText(freedomContent?.subtitle, "A partnership"),
-  caption:
-    "U COUNT funds and orders goods from sites employing women at risk of, or surviving, trafficking. Beauty REnewed develops the products and works directly with each site.",
-  videoEmbedUrl: toVideoEmbedUrl(cmsText(freedomContent?.videoUrl, "432015030")),
-  ctaLabel: cmsText(freedomContent?.primaryCtaLabel, "Shop at bRE"),
-  ctaUrl: cmsText(freedomContent?.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
-};
+// Deleting the section from the Page Content collection has to actually
+// remove it from the page. Previously the defaults below stood in for the
+// missing record, so the section rendered in full no matter what the CMS
+// said. Only build it when the record exists, and skip the section entirely
+// when it does not.
+const freedom = freedomContent
+  ? {
+      eyebrow: cmsText(freedomContent.eyebrow, "Freedom Supply Chain"),
+      title: cmsText(freedomContent.title, "Two organizations, one mission for freedom."),
+      body: cmsText(
+        freedomContent.body,
+        "The Freedom Supply Chain is a partnership between U COUNT and Beauty REnewed (bRE), LLC, built to create a sustainable supply chain and sales outlets for those affected by human trafficking. U COUNT, a 501(c)(3) funded by donations and product sales, uses insight from bRE to source goods, while Beauty REnewed develops the products and visits each site to procure raw goods, refine the designs, and support the women who make them.",
+      ),
+      partnershipLabel: cmsText(freedomContent.subtitle, "A partnership"),
+      caption:
+        "U COUNT funds and orders goods from sites employing women at risk of, or surviving, trafficking. Beauty REnewed develops the products and works directly with each site.",
+      videoEmbedUrl: toVideoEmbedUrl(cmsText(freedomContent.videoUrl, "432015030")),
+      ctaLabel: cmsText(freedomContent.primaryCtaLabel, "Shop at bRE"),
+      ctaUrl: cmsText(freedomContent.primaryCtaUrl, "https://www.iambeautyrenewed.com/"),
+    }
+  : null;
 
 setPublicCacheControl(Astro.response.headers);
 ---
@@ -359,59 +366,61 @@ setPublicCacheControl(Astro.response.headers);
     </div>
   </section>
 
-  <section class="relative overflow-hidden bg-ember-50/40 py-16 lg:py-24">
-    <div class="absolute -right-24 top-24 hidden h-72 w-72 rounded-full bg-ember-brand/5 blur-3xl lg:block" aria-hidden="true"></div>
-    <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
-      <div class="mx-auto max-w-3xl text-center">
-        <div class="flex items-center justify-center gap-3 mb-4">
-          <div class="w-12 h-px bg-ember-brand"></div>
-          <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.eyebrow}</span>
-          <div class="w-12 h-px bg-ember-brand"></div>
-        </div>
-        <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-4xl">{freedom.title}</h2>
-        <p class="mt-5 text-neutral-600 leading-relaxed">{freedom.body}</p>
-      </div>
-
-      <div class="mt-12 grid gap-8 lg:mt-16 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch lg:gap-10">
-        <div class="overflow-hidden rounded-3xl border border-ember-100 bg-neutral-900 shadow-xl shadow-ember-brand/10">
-          <div class="relative aspect-video">
-            <iframe
-              class="absolute inset-0 h-full w-full"
-              src={freedom.videoEmbedUrl}
-              title="The Freedom Supply Chain — U COUNT & Beauty REnewed"
-              loading="lazy"
-              frameborder="0"
-              allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
-              allowfullscreen
-            ></iframe>
+  {freedom && (
+    <section class="relative overflow-hidden bg-ember-50/40 py-16 lg:py-24">
+      <div class="absolute -right-24 top-24 hidden h-72 w-72 rounded-full bg-ember-brand/5 blur-3xl lg:block" aria-hidden="true"></div>
+      <div class="relative max-w-7xl mx-auto px-6 lg:px-8">
+        <div class="mx-auto max-w-3xl text-center">
+          <div class="flex items-center justify-center gap-3 mb-4">
+            <div class="w-12 h-px bg-ember-brand"></div>
+            <span class="text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.eyebrow}</span>
+            <div class="w-12 h-px bg-ember-brand"></div>
           </div>
+          <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-4xl">{freedom.title}</h2>
+          <p class="mt-5 text-neutral-600 leading-relaxed">{freedom.body}</p>
         </div>
 
-        <div class="flex flex-col rounded-3xl border border-ember-100 bg-white/80 p-8 shadow-xl shadow-ember-brand/10 backdrop-blur-sm">
-          <p class="text-center text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.partnershipLabel}</p>
-          <div class="mt-7 flex items-center justify-center gap-5 sm:gap-7">
-            <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT - Fight Human Trafficking" class="h-12 w-auto sm:h-14" width="2122" height="711" loading="lazy" decoding="async" />
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ember-brand text-white shadow-md shadow-ember-brand/30" aria-hidden="true">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+        <div class="mt-12 grid gap-8 lg:mt-16 lg:grid-cols-[1.12fr_0.88fr] lg:items-stretch lg:gap-10">
+          <div class="overflow-hidden rounded-3xl border border-ember-100 bg-neutral-900 shadow-xl shadow-ember-brand/10">
+            <div class="relative aspect-video">
+              <iframe
+                class="absolute inset-0 h-full w-full"
+                src={freedom.videoEmbedUrl}
+                title="The Freedom Supply Chain — U COUNT & Beauty REnewed"
+                loading="lazy"
+                frameborder="0"
+                allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                allowfullscreen
+              ></iframe>
             </div>
-            <img src="/assets/bre-logo.webp" alt="Beauty REnewed" class="h-20 w-20 object-contain sm:h-24 sm:w-24" width="600" height="568" loading="lazy" decoding="async" />
           </div>
-          <p class="mt-7 text-center text-sm leading-relaxed text-neutral-500">
-            {freedom.caption}
-          </p>
-          <a
-            href={freedom.ctaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="mt-auto flex w-full items-center justify-center gap-2 rounded-full bg-ember-brand px-6 py-3 font-display font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500"
-          >
-            {freedom.ctaLabel}
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-          </a>
+
+          <div class="flex flex-col rounded-3xl border border-ember-100 bg-white/80 p-8 shadow-xl shadow-ember-brand/10 backdrop-blur-sm">
+            <p class="text-center text-base font-semibold uppercase tracking-[0.25em] text-ember-600">{freedom.partnershipLabel}</p>
+            <div class="mt-7 flex items-center justify-center gap-5 sm:gap-7">
+              <img src="/assets/ucount-logo-lockup.svg" alt="U COUNT - Fight Human Trafficking" class="h-12 w-auto sm:h-14" width="2122" height="711" loading="lazy" decoding="async" />
+              <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ember-brand text-white shadow-md shadow-ember-brand/30" aria-hidden="true">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
+              </div>
+              <img src="/assets/bre-logo.webp" alt="Beauty REnewed" class="h-20 w-20 object-contain sm:h-24 sm:w-24" width="600" height="568" loading="lazy" decoding="async" />
+            </div>
+            <p class="mt-7 text-center text-sm leading-relaxed text-neutral-500">
+              {freedom.caption}
+            </p>
+            <a
+              href={freedom.ctaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-auto flex w-full items-center justify-center gap-2 rounded-full bg-ember-brand px-6 py-3 font-display font-semibold text-white shadow-lg shadow-ember-brand/25 transition-colors hover:bg-ember-500"
+            >
+              {freedom.ctaLabel}
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  )}
 
   <script define:vars={{ productsPerPage, minPrice, maxPrice }}>
     (() => {
