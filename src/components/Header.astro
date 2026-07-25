@@ -107,6 +107,14 @@ const mobileClass = (page?: string) =>
     const toggles = document.querySelectorAll("[data-mobile-menu-toggle]");
 
     toggles.forEach((toggle) => {
+      // Runs directly and again from astro:page-load, which the ClientRouter
+      // also fires on first load. Binding twice meant a click ran the toggle
+      // twice, so the menu opened and shut again and never appeared.
+      if (toggle.hasAttribute("data-mobile-menu-bound")) {
+        return;
+      }
+
+      toggle.setAttribute("data-mobile-menu-bound", "true");
       toggle.addEventListener("click", () => {
         const isOpen = mobileMenu?.classList.toggle("open") ?? false;
         toggles.forEach((button) => {
