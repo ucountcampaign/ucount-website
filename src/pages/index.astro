@@ -321,15 +321,39 @@ const localizeInternalUrl = (url: string) => {
 
 hero.primaryCtaUrl = localizeInternalUrl(hero.primaryCtaUrl);
 
+// Locally held logos at full resolution. The copies in the CMS are small
+// enough to look soft once the spotlight mark is rendered at 8rem, so prefer
+// a bundled asset when we have one and fall back to the CMS image otherwise.
+const partnerLogoAssets: Record<string, string> = {
+  "project-rescue": "/assets/partners/project-rescue.png",
+  "stop-the-traffik": "/assets/partners/stop-the-traffik.png",
+  "atlas-free": "/assets/partners/atlas-free.png",
+  "global-family": "/assets/partners/global-family.png",
+  "sarahs-home": "/assets/partners/sarahs-home.png",
+  "daniel-academy": "/assets/partners/daniel-academy.png",
+  "a-courageous-rose": "/assets/partners/a-courageous-rose.webp",
+  "justice-now": "/assets/partners/justice-now-noco-official.webp",
+  "restoring-freedom-workshop": "/assets/partners/restoring-freedom-workshop.jpg",
+};
+
 const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).map(
-  (partner) => ({
-    id: cmsText(partner.slug, cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-")),
-    name: cmsText(partner.name, "Partner"),
-    logo: cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
-    tagline: cmsText(partner.tagline, ""),
-    description: cmsText(partner.description, ""),
-    url: cmsText(partner.websiteUrl, "#"),
-  }),
+  (partner) => {
+    const id = cmsText(
+      partner.slug,
+      cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    );
+
+    return {
+      id,
+      name: cmsText(partner.name, "Partner"),
+      logo:
+        partnerLogoAssets[id] ??
+        cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
+      tagline: cmsText(partner.tagline, ""),
+      description: cmsText(partner.description, ""),
+      url: cmsText(partner.websiteUrl, "#"),
+    };
+  },
 );
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
