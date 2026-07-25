@@ -28,7 +28,7 @@ export default defineConfig({
   // `wrangler versions upload` then tries to provision that namespace on
   // every deploy and fails once it exists:
   //
-  //   Creating new KV Namespace "ucount-self-headless-session"...
+  //   Creating new KV Namespace "ucount-website-session"...
   //   a namespace with this account ID and title already exists [code: 10014]
   //
   // Naming a non-KV driver keeps the binding out of the generated config, so
