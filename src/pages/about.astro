@@ -116,9 +116,14 @@ const defaultInitiatives = [
 const defaultValues = [
   "Hope",
   "Courage",
+  "Collaborate",
+  "Community",
   "Compassion",
   "Dignity",
   "Justice",
+  "Grace",
+  "Persevere",
+  "Vision",
 ].map((title) => ({ title }));
 
 const initiatives = (initiativesResult.length ? initiativesResult : defaultInitiatives).map(
@@ -129,12 +134,13 @@ const initiatives = (initiativesResult.length ? initiativesResult : defaultIniti
   }),
 );
 
+// All ten values are shown. An earlier change capped this at five to lay
+// them out over two rows, which is what dropped half the list off the page.
 const values = (valuesResult.length ? valuesResult : defaultValues)
   .map((value) => ({
     title: cmsText(value.title, ""),
   }))
-  .filter((value) => value.title)
-  .slice(0, 5);
+  .filter((value) => value.title);
 
 const teamMembers = teamMembersResult.map((member) => ({
   name: cmsText(member.name, ""),
@@ -272,9 +278,9 @@ const aboutDescription = truncateDescription(hero.body);
         <h2 class="font-display font-bold text-3xl lg:text-5xl text-neutral-900">{valuesIntro.title}</h2>
       </div>
 
-      <div class="mx-auto grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-        {values.map((value, index) => (
-          <span class={`rounded-full border border-ember-200 bg-ember-50 px-6 py-3 text-center font-display text-base font-semibold text-ember-700 lg:col-span-2 ${index === 3 ? "lg:col-start-2" : ""}`}>
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-4">
+        {values.map((value) => (
+          <span class="flex min-h-12 items-center justify-center rounded-full border border-ember-200 bg-ember-50 px-3 py-3 text-center font-display text-sm font-semibold text-ember-700 sm:px-4 sm:text-base">
             {value.title}
           </span>
         ))}

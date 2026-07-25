@@ -409,7 +409,7 @@ export function getValues(): Promise<ValueItem[]> {
   return querySortedCollection<ValueItem & CmsRecord>(
     "Values",
     "active",
-    (query) => query.eq("isActive", true).ascending("sortOrder"),
+    (query) => query.eq("isActive", true).ascending("sortOrder").limit(100),
   );
 }
 
