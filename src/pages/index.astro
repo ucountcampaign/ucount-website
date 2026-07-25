@@ -271,6 +271,20 @@ const colorClass = (token: string) =>
 
 const bgColorClass = (token: string) => colorClass(token).split(" ")[0];
 const textColorClass = (token: string) => colorClass(token).split(" ")[1];
+
+// Tailwind only emits utilities it can see as complete literals in the source.
+// Building these as `${bgColorClass(token)}/20` produced the class name at
+// runtime, so only bg-ember-brand/20 (which appears literally elsewhere) was
+// ever generated and every other accent rendered with no shading. Spell each
+// variant out so all five exist in the compiled stylesheet.
+const initiativeAccentClass = (token: string) =>
+  ({
+    "ember-brand": "bg-ember-brand/20",
+    "ember-700": "bg-ember-700/20",
+    "gold-400": "bg-gold-400/20",
+    "sky-400": "bg-sky-400/20",
+    "neutral-700": "bg-neutral-700/20",
+  })[token] ?? "bg-ember-brand/20";
 const localizeInternalUrl = (url: string) => {
   const value = url.trim();
 
@@ -1429,7 +1443,7 @@ const donateCta = {
           {homeInitiatives.map((initiative) => (
             <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-ember-brand/30 transition-colors">
               <div class="flex items-center gap-4 mb-3">
-                <div class={`w-10 h-10 rounded-xl ${bgColorClass(initiative.accentToken)}/20 flex items-center justify-center`}>
+                <div class={`w-10 h-10 rounded-xl ${initiativeAccentClass(initiative.accentToken)} flex items-center justify-center`}>
                   <svg class={`w-5 h-5 ${textColorClass(initiative.accentToken)}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/></svg>
                 </div>
                 <h3 class="font-display font-bold text-xl">{initiative.title}</h3>
