@@ -318,6 +318,16 @@ const aboutDescription = truncateDescription(hero.body);
           return;
         }
 
+        // This runs both directly and again from astro:page-load, which the
+        // ClientRouter also fires on first load. Without this guard each
+        // button ended up with two click listeners, so a single click toggled
+        // the panel open and straight back shut and the bio never appeared.
+        if (button.getAttribute("data-bio-bound") === "true") {
+          return;
+        }
+
+        button.setAttribute("data-bio-bound", "true");
+
         button.addEventListener("click", () => {
           const isOpen = button.getAttribute("aria-expanded") === "true";
           const nextOpen = !isOpen;
