@@ -410,7 +410,41 @@ setPublicCacheControl(Astro.response.headers);
         const variantOptions = Array.from(requiredSelect?.querySelectorAll("[data-custom-select-option]") ?? []);
         let mainImageSwapToken = 0;
 
+        // Close any open select when the click lands outside it. This has to
+        // hang off document, which Astro's client-side navigation does not
+        // replace, so registering it per select on every visit would stack up
+        // listeners each holding on to a detached element. Bind one delegated
+        // listener for the life of the tab and look the selects up from the
+        // live DOM instead.
+        function bindCustomSelectOutsideClick() {
+          if (window.__ucountCustomSelectOutsideBound) {
+            return;
+          }
+
+          window.__ucountCustomSelectOutsideBound = true;
+
+          document.addEventListener("click", (event) => {
+            document.querySelectorAll("[data-custom-select]").forEach((select) => {
+              if (event.target && select.contains(event.target)) {
+                return;
+              }
+
+              const menu = select.querySelector("[data-custom-select-menu]");
+              const trigger = select.querySelector("[data-custom-select-trigger]");
+
+              if (menu) {
+                menu.hidden = true;
+              }
+
+              if (trigger) {
+                trigger.setAttribute("aria-expanded", "false");
+              }
+            });
+          });
+        }
+
         function initCustomSelects() {
+          bindCustomSelectOutsideClick();
           document.querySelectorAll("[data-custom-select]").forEach((select) => {
             const trigger = select.querySelector("[data-custom-select-trigger]");
             const menu = select.querySelector("[data-custom-select-menu]");
@@ -485,12 +519,6 @@ setPublicCacheControl(Astro.response.headers);
                 closeMenu();
                 input.dispatchEvent(new Event("change", { bubbles: true }));
               });
-            });
-
-            document.addEventListener("click", (event) => {
-              if (!event.target || !select.contains(event.target)) {
-                closeMenu();
-              }
             });
 
             select.addEventListener("keydown", (event) => {

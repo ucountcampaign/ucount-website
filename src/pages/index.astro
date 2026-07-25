@@ -2333,14 +2333,26 @@ const donateCta = {
       }
     });
 
+    // This script is inline, so Astro re-executes it every time the visitor
+    // navigates back to the home page. window survives those navigations, so
+    // without this guard each return trip would add another resize listener
+    // on top of the last. Register once and let it call through to whichever
+    // handlers the current page defined.
     let accordionWmResizeTimer;
-    window.addEventListener("resize", () => {
+    window.__ucountPartnerResize = () => {
       clearTimeout(accordionWmResizeTimer);
       accordionWmResizeTimer = setTimeout(() => {
         syncAccordionWatermarkVisibility();
         syncSpotlightMinHeight();
       }, 120);
-    });
+    };
+
+    if (!window.__ucountPartnerResizeBound) {
+      window.__ucountPartnerResizeBound = true;
+      window.addEventListener("resize", () => {
+        window.__ucountPartnerResize?.();
+      });
+    }
 
     activeVariant = "pills-spotlight";
     renderPartnersLab();
