@@ -1,5 +1,67 @@
 @import "tailwindcss";
 
+/*
+ * Clash Display and Satoshi are served from public/assets/fonts rather than
+ * api.fontshare.com. The CDN route needed a stylesheet round trip (~0.9s to
+ * first byte) before it could even request the font files, and until all of
+ * that finished font-display: swap painted system-ui, so first-time visitors
+ * saw the wrong typeface for over a second. Same-origin woff2 removes the
+ * extra hop and the third-party dependency.
+ *
+ * Both families are published by the Indian Type Foundry under the Fontshare
+ * free licence, which permits self-hosting for commercial use.
+ *
+ * woff2 only: it is supported by every browser this site targets, and the
+ * woff/ttf copies the CDN also offered would roughly triple the payload.
+ */
+@font-face {
+  font-family: "Clash Display";
+  src: url("/assets/fonts/clash-display-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("/assets/fonts/clash-display-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("/assets/fonts/clash-display-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/assets/fonts/satoshi-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/assets/fonts/satoshi-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/assets/fonts/satoshi-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --color-ember-50: #FFEFE6;
   --color-ember-100: #FFD3BA;

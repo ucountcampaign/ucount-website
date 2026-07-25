@@ -2,3 +2,12 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+
+# astro dev (via @cloudflare/vite-plugin) and wrangler resolve different
+# miniflare/workerd pairs, but both persist local state to .wrangler/state.
+# The newer workerd writes a 3-column _cf_ALARM table that the older one
+# cannot read, so whichever ran second crashed on startup. Pin both to the
+# version wrangler itself depends on to keep the on-disk schema consistent.
+overrides:
+  miniflare: 4.20260630.0
+  workerd: 1.20260630.1

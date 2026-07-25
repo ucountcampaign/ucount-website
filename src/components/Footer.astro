@@ -1,6 +1,5 @@
 ---
 import type { ResolvedSiteSettings } from "../lib/wix-cms";
-import { getSiteUrl } from "../lib/seo";
 import SocialLinks from "./SocialLinks.astro";
 
 type ActivePage = "home" | "about" | "contact" | "events" | "shop";
@@ -11,8 +10,6 @@ const { site, activePage } = Astro.props as {
 };
 
 const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
-const publicSiteUrl = getSiteUrl(Astro.url.origin);
-const publicSiteHost = new URL(publicSiteUrl).hostname.replace(/^www\./, "");
 ---
 
 <footer class="bg-neutral-900 text-white">
@@ -54,7 +51,6 @@ const publicSiteHost = new URL(publicSiteUrl).hostname.replace(/^www\./, "");
         <h3 class="font-display font-bold text-sm uppercase tracking-wider text-neutral-400 mb-4">Contact</h3>
         <ul class="space-y-2.5">
           <li><a href={`mailto:${site.mainEmail}`} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">{site.mainEmail}</a></li>
-          <li><a href={publicSiteUrl} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">{publicSiteHost}</a></li>
         </ul>
       </div>
     </div>

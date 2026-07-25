@@ -22,6 +22,8 @@ const [
   heroContent,
   missionContent,
   impactContent,
+  impactInitiativeHeadingContent,
+  impactRegionHeadingContent,
   partnersContent,
   shopContent,
   donateContent,
@@ -37,6 +39,8 @@ const [
   getPageSection("home", "hero"),
   getPageSection("home", "mission-intro"),
   getPageSection("home", "impact-intro"),
+  getPageSection("home", "impact-initiative-heading"),
+  getPageSection("home", "impact-region-heading"),
   getPageSection("home", "partners-intro"),
   getPageSection("home", "shop-intro"),
   getPageSection("home", "donate-cta"),
@@ -209,9 +213,21 @@ const homeInitiatives = (
   accentToken: cmsText(initiative.accentToken, "ember-brand"),
 }));
 
+// The stored CMS eyebrow may still read "Our Impact in 2025". Strip the
+// trailing year here so the heading reads "Our Impact" without needing the
+// collection edited first; the year now lives on the two boxes below.
+const storedImpactEyebrow = cmsText(impactContent?.eyebrow, "Our Impact");
 const impactIntro = {
-  eyebrow: cmsText(impactContent?.eyebrow, "Our Impact in 2025"),
+  eyebrow: storedImpactEyebrow.replace(/\s+in\s+2025$/i, ""),
   title: cmsText(impactContent?.title, "Courageous impact. Dignity restored."),
+};
+
+const impactHeadings = {
+  initiative: cmsText(
+    impactInitiativeHeadingContent?.title,
+    "2025 Spend by Initiative",
+  ),
+  region: cmsText(impactRegionHeadingContent?.title, "2025 Where We Invest"),
 };
 
 const partnersIntro = {
@@ -271,6 +287,20 @@ const colorClass = (token: string) =>
 
 const bgColorClass = (token: string) => colorClass(token).split(" ")[0];
 const textColorClass = (token: string) => colorClass(token).split(" ")[1];
+
+// Tailwind only emits utilities it can see as complete literals in the source.
+// Building these as `${bgColorClass(token)}/20` produced the class name at
+// runtime, so only bg-ember-brand/20 (which appears literally elsewhere) was
+// ever generated and every other accent rendered with no shading. Spell each
+// variant out so all five exist in the compiled stylesheet.
+const initiativeAccentClass = (token: string) =>
+  ({
+    "ember-brand": "bg-ember-brand/20",
+    "ember-700": "bg-ember-700/20",
+    "gold-400": "bg-gold-400/20",
+    "sky-400": "bg-sky-400/20",
+    "neutral-700": "bg-neutral-700/20",
+  })[token] ?? "bg-ember-brand/20";
 const localizeInternalUrl = (url: string) => {
   const value = url.trim();
 
@@ -291,15 +321,39 @@ const localizeInternalUrl = (url: string) => {
 
 hero.primaryCtaUrl = localizeInternalUrl(hero.primaryCtaUrl);
 
+// Locally held logos at full resolution. The copies in the CMS are small
+// enough to look soft once the spotlight mark is rendered at 8rem, so prefer
+// a bundled asset when we have one and fall back to the CMS image otherwise.
+const partnerLogoAssets: Record<string, string> = {
+  "project-rescue": "/assets/partners/project-rescue.png",
+  "stop-the-traffik": "/assets/partners/stop-the-traffik.png",
+  "atlas-free": "/assets/partners/atlas-free.png",
+  "global-family": "/assets/partners/global-family.png",
+  "sarahs-home": "/assets/partners/sarahs-home.png",
+  "daniel-academy": "/assets/partners/daniel-academy.png",
+  "a-courageous-rose": "/assets/partners/a-courageous-rose.webp",
+  "justice-now": "/assets/partners/justice-now-noco-official.webp",
+  "restoring-freedom-workshop": "/assets/partners/restoring-freedom-workshop.jpg",
+};
+
 const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).map(
-  (partner) => ({
-    id: cmsText(partner.slug, cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-")),
-    name: cmsText(partner.name, "Partner"),
-    logo: cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
-    tagline: cmsText(partner.tagline, ""),
-    description: cmsText(partner.description, ""),
-    url: cmsText(partner.websiteUrl, "#"),
-  }),
+  (partner) => {
+    const id = cmsText(
+      partner.slug,
+      cmsText(partner.name, "partner").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+    );
+
+    return {
+      id,
+      name: cmsText(partner.name, "Partner"),
+      logo:
+        partnerLogoAssets[id] ??
+        cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
+      tagline: cmsText(partner.tagline, ""),
+      description: cmsText(partner.description, ""),
+      url: cmsText(partner.websiteUrl, "#"),
+    };
+  },
 );
 
 const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
@@ -703,9 +757,38 @@ const donateCta = {
     }
 
     .partner-logo-wrap--lg {
-      width: 4.75rem;
-      height: 4.75rem;
+      width: 8rem;
+      height: 8rem;
+      min-width: 8rem;
+      min-height: 8rem;
       border-radius: 1.25rem;
+    }
+
+    /* The spotlight's left column pairs the logo with the partner name and
+       centres both, so the identity reads as one block rather than a small
+       mark floating beside body copy. */
+    .partner-spotlight-identity {
+      display: flex;
+      min-height: 12rem;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #f0ede9;
+      border-radius: 1.5rem;
+      background: rgba(255, 255, 255, 0.82);
+      text-align: center;
+    }
+
+    .partner-spotlight-identity .partner-logo-wrap--lg {
+      border: 0;
+      border-radius: 1.5rem;
+    }
+
+    .partner-spotlight-identity .partner-title {
+      font-size: clamp(1.25rem, 2vw, 1.65rem);
+      line-height: 1.15;
     }
 
     .partner-logo {
@@ -1429,7 +1512,7 @@ const donateCta = {
           {homeInitiatives.map((initiative) => (
             <div class="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-ember-brand/30 transition-colors">
               <div class="flex items-center gap-4 mb-3">
-                <div class={`w-10 h-10 rounded-xl ${bgColorClass(initiative.accentToken)}/20 flex items-center justify-center`}>
+                <div class={`w-10 h-10 rounded-xl ${initiativeAccentClass(initiative.accentToken)} flex items-center justify-center`}>
                   <svg class={`w-5 h-5 ${textColorClass(initiative.accentToken)}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21s-7-4.438-7-11a7 7 0 1114 0c0 6.562-7 11-7 11z"/></svg>
                 </div>
                 <h3 class="font-display font-bold text-xl">{initiative.title}</h3>
@@ -1463,7 +1546,7 @@ const donateCta = {
 
       <div class="grid lg:grid-cols-2 gap-8">
         <div class="bg-white rounded-2xl p-8 border border-neutral-100">
-          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Spend by Initiative</h3>
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">{impactHeadings.initiative}</h3>
           <div class="flex flex-col sm:flex-row items-center gap-8">
             <div class="donut"></div>
             <div class="space-y-4">
@@ -1481,7 +1564,7 @@ const donateCta = {
         </div>
 
         <div class="bg-white rounded-2xl p-8 border border-neutral-100">
-          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Where We Invest</h3>
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">{impactHeadings.region}</h3>
           <div class="grid grid-cols-3 gap-4">
             {regionAllocations.map((allocation, index) => (
               <div class={`text-center p-4 rounded-xl ${index === 0 ? "bg-ember-50/50" : "bg-neutral-50"}`}>
@@ -1651,6 +1734,20 @@ const donateCta = {
       `;
     }
 
+    // Partner records come from the CMS and are pasted into innerHTML by the
+    // markup builders below. Escape every interpolated field so a stray angle
+    // bracket or quote in a name or description cannot close the surrounding
+    // tag and inject markup.
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character]);
+    }
+
     function chevronIcon() {
       return `
         <svg class="partner-chevron chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1664,14 +1761,14 @@ const donateCta = {
       const imageClass = size === "lg" ? "partner-logo partner-logo--lg" : "partner-logo";
       return `
         <div class="${wrapperClass}">
-          <img src="${partner.logo}" alt="${partner.name}" class="${imageClass}">
+          <img src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" class="${imageClass}">
         </div>
       `;
     }
 
     function ctaMarkup(partner) {
       return `
-        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-cta">
+        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-cta">
           Visit Partner
           ${externalIcon()}
         </a>
@@ -1683,11 +1780,13 @@ const donateCta = {
         <div class="partner-spotlight-panel"${animate ? ' data-animate="true"' : ""}>
           <div class="partner-spotlight-meta">${metaLabel}</div>
           <div class="partner-spotlight-layout">
-            ${logoMarkup(partner, "lg")}
+            <div class="partner-spotlight-identity">
+              ${logoMarkup(partner, "lg")}
+              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
+            </div>
             <div>
-              <h3 class="partner-title">${partner.name}</h3>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
               ${ctaMarkup(partner)}
             </div>
           </div>
@@ -1760,18 +1859,18 @@ const donateCta = {
           ${PARTNERS.map((partner, index) => `
             <div class="partner-accordion-stack">
               <div class="partner-accordion-wm" aria-hidden="true">
-                <img class="partner-accordion-wm-img" alt="${partner.name} logo watermark" decoding="async" loading="lazy" />
+                <img class="partner-accordion-wm-img" alt="${escapeHtml(partner.name)} logo watermark" decoding="async" loading="lazy" />
               </div>
               <details class="partner-accordion-card">
                 <summary class="partner-accordion-summary">
                   <div class="partner-head">
                     ${logoMarkup(partner)}
-                    <h3 class="partner-title">${partner.name}</h3>
+                    <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
                   </div>
                   ${chevronIcon()}
                 </summary>
                 <div class="partner-body">
-                  <p class="partner-copy">${partner.description}</p>
+                  <p class="partner-copy">${escapeHtml(partner.description)}</p>
                   ${ctaMarkup(partner)}
                 </div>
               </details>
@@ -1817,14 +1916,14 @@ const donateCta = {
               <div class="partner-head">
                 ${logoMarkup(partner, useLargeLogo ? "lg" : "md")}
                 <div>
-                  <h3 class="partner-title">${partner.name}</h3>
-                  <p class="partner-bento-lead">${partner.tagline}</p>
+                  <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
+                  <p class="partner-bento-lead">${escapeHtml(partner.tagline)}</p>
                 </div>
               </div>
-              <p class="${descClass}" style="margin-top:${spacing};">${partner.description}</p>
+              <p class="${descClass}" style="margin-top:${spacing};">${escapeHtml(partner.description)}</p>
             </div>
             <div class="partner-bento-foot">
-              <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
+              <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
                 Visit site
                 ${externalIconSmall()}
               </a>
@@ -1842,15 +1941,15 @@ const donateCta = {
 
     function movingCardsMarkup(reverse = false) {
       const row = PARTNERS.concat(PARTNERS).map((partner) => `
-        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
+        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
           <div class="partner-head">
             ${logoMarkup(partner)}
             <div>
-              <h3 class="partner-title">${partner.name}</h3>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
+              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
             </div>
           </div>
-          <p class="partner-copy">${partner.description}</p>
+          <p class="partner-copy">${escapeHtml(partner.description)}</p>
           <div class="partner-moving-card__foot" aria-hidden="true">
             <span>Open</span>
             ${externalIconSmall()}
@@ -1878,9 +1977,9 @@ const donateCta = {
 
     function pillMarkup(partner) {
       return `
-        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
           ${logoMarkup(partner)}
-          <span>${partner.name}</span>
+          <span>${escapeHtml(partner.name)}</span>
         </button>
       `;
     }
@@ -2060,11 +2159,11 @@ const donateCta = {
         <div class="partner-directory">
           <div class="partner-directory-list">
             ${PARTNERS.map((partner) => `
-              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
                 ${logoMarkup(partner)}
                 <div>
-                  <div class="partner-title">${partner.name}</div>
-                  <small>${partner.tagline}</small>
+                  <div class="partner-title">${escapeHtml(partner.name)}</div>
+                  <small>${escapeHtml(partner.tagline)}</small>
                 </div>
               </button>
             `).join("")}
@@ -2083,9 +2182,9 @@ const donateCta = {
           <div class="partner-feature-grid">
             ${logoMarkup(partner, "lg")}
             <div>
-              <h3 class="partner-title" style="font-size:1.6rem;">${partner.name}</h3>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              <h3 class="partner-title" style="font-size:1.6rem;">${escapeHtml(partner.name)}</h3>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
               ${ctaMarkup(partner)}
             </div>
           </div>
@@ -2234,14 +2333,26 @@ const donateCta = {
       }
     });
 
+    // This script is inline, so Astro re-executes it every time the visitor
+    // navigates back to the home page. window survives those navigations, so
+    // without this guard each return trip would add another resize listener
+    // on top of the last. Register once and let it call through to whichever
+    // handlers the current page defined.
     let accordionWmResizeTimer;
-    window.addEventListener("resize", () => {
+    window.__ucountPartnerResize = () => {
       clearTimeout(accordionWmResizeTimer);
       accordionWmResizeTimer = setTimeout(() => {
         syncAccordionWatermarkVisibility();
         syncSpotlightMinHeight();
       }, 120);
-    });
+    };
+
+    if (!window.__ucountPartnerResizeBound) {
+      window.__ucountPartnerResizeBound = true;
+      window.addEventListener("resize", () => {
+        window.__ucountPartnerResize?.();
+      });
+    }
 
     activeVariant = "pills-spotlight";
     renderPartnersLab();
