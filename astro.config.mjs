@@ -22,6 +22,24 @@ export default defineConfig({
     imageService: "passthrough",
   }),
 
+  // Nothing in this site reads or writes Astro.session. Left unset, the
+  // Cloudflare adapter defaults the session store to a KV binding named
+  // SESSION and emits it into the generated wrangler.json without an id.
+  // `wrangler versions upload` then tries to provision that namespace on
+  // every deploy and fails once it exists:
+  //
+  //   Creating new KV Namespace "ucount-self-headless-session"...
+  //   a namespace with this account ID and title already exists [code: 10014]
+  //
+  // Naming a non-KV driver keeps the binding out of the generated config, so
+  // no KV resource is requested and there is nothing to provision. If session
+  // state is ever actually needed, swap this for the KV driver and declare the
+  // namespace with an explicit id in wrangler.jsonc rather than relying on
+  // auto-provisioning.
+  session: {
+    driver: { entrypoint: "unstorage/drivers/memory" },
+  },
+
   image: {
     domains: ["static.wixstatic.com"],
   },
