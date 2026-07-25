@@ -32,3 +32,6 @@ pnpm-debug.log*
 
 # local Wix-managed credentials
 .env.local
+
+# private org documents (tax certificates, licenses) — never publish
+docs/*.pdf
