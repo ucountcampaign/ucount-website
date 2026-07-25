@@ -22,6 +22,8 @@ const [
   heroContent,
   missionContent,
   impactContent,
+  impactInitiativeHeadingContent,
+  impactRegionHeadingContent,
   partnersContent,
   shopContent,
   donateContent,
@@ -37,6 +39,8 @@ const [
   getPageSection("home", "hero"),
   getPageSection("home", "mission-intro"),
   getPageSection("home", "impact-intro"),
+  getPageSection("home", "impact-initiative-heading"),
+  getPageSection("home", "impact-region-heading"),
   getPageSection("home", "partners-intro"),
   getPageSection("home", "shop-intro"),
   getPageSection("home", "donate-cta"),
@@ -209,9 +213,21 @@ const homeInitiatives = (
   accentToken: cmsText(initiative.accentToken, "ember-brand"),
 }));
 
+// The stored CMS eyebrow may still read "Our Impact in 2025". Strip the
+// trailing year here so the heading reads "Our Impact" without needing the
+// collection edited first; the year now lives on the two boxes below.
+const storedImpactEyebrow = cmsText(impactContent?.eyebrow, "Our Impact");
 const impactIntro = {
-  eyebrow: cmsText(impactContent?.eyebrow, "Our Impact in 2025"),
+  eyebrow: storedImpactEyebrow.replace(/\s+in\s+2025$/i, ""),
   title: cmsText(impactContent?.title, "Courageous impact. Dignity restored."),
+};
+
+const impactHeadings = {
+  initiative: cmsText(
+    impactInitiativeHeadingContent?.title,
+    "2025 Spend by Initiative",
+  ),
+  region: cmsText(impactRegionHeadingContent?.title, "2025 Where We Invest"),
 };
 
 const partnersIntro = {
@@ -1477,7 +1493,7 @@ const donateCta = {
 
       <div class="grid lg:grid-cols-2 gap-8">
         <div class="bg-white rounded-2xl p-8 border border-neutral-100">
-          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Spend by Initiative</h3>
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">{impactHeadings.initiative}</h3>
           <div class="flex flex-col sm:flex-row items-center gap-8">
             <div class="donut"></div>
             <div class="space-y-4">
@@ -1495,7 +1511,7 @@ const donateCta = {
         </div>
 
         <div class="bg-white rounded-2xl p-8 border border-neutral-100">
-          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">Where We Invest</h3>
+          <h3 class="font-display font-bold text-lg mb-6 text-neutral-900">{impactHeadings.region}</h3>
           <div class="grid grid-cols-3 gap-4">
             {regionAllocations.map((allocation, index) => (
               <div class={`text-center p-4 rounded-xl ${index === 0 ? "bg-ember-50/50" : "bg-neutral-50"}`}>
