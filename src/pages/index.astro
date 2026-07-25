@@ -1734,6 +1734,20 @@ const donateCta = {
       `;
     }
 
+    // Partner records come from the CMS and are pasted into innerHTML by the
+    // markup builders below. Escape every interpolated field so a stray angle
+    // bracket or quote in a name or description cannot close the surrounding
+    // tag and inject markup.
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character]);
+    }
+
     function chevronIcon() {
       return `
         <svg class="partner-chevron chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -1747,14 +1761,14 @@ const donateCta = {
       const imageClass = size === "lg" ? "partner-logo partner-logo--lg" : "partner-logo";
       return `
         <div class="${wrapperClass}">
-          <img src="${partner.logo}" alt="${partner.name}" class="${imageClass}">
+          <img src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" class="${imageClass}">
         </div>
       `;
     }
 
     function ctaMarkup(partner) {
       return `
-        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-cta">
+        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-cta">
           Visit Partner
           ${externalIcon()}
         </a>
@@ -1768,11 +1782,11 @@ const donateCta = {
           <div class="partner-spotlight-layout">
             <div class="partner-spotlight-identity">
               ${logoMarkup(partner, "lg")}
-              <h3 class="partner-title">${partner.name}</h3>
+              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
             </div>
             <div>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
               ${ctaMarkup(partner)}
             </div>
           </div>
@@ -1845,18 +1859,18 @@ const donateCta = {
           ${PARTNERS.map((partner, index) => `
             <div class="partner-accordion-stack">
               <div class="partner-accordion-wm" aria-hidden="true">
-                <img class="partner-accordion-wm-img" alt="${partner.name} logo watermark" decoding="async" loading="lazy" />
+                <img class="partner-accordion-wm-img" alt="${escapeHtml(partner.name)} logo watermark" decoding="async" loading="lazy" />
               </div>
               <details class="partner-accordion-card">
                 <summary class="partner-accordion-summary">
                   <div class="partner-head">
                     ${logoMarkup(partner)}
-                    <h3 class="partner-title">${partner.name}</h3>
+                    <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
                   </div>
                   ${chevronIcon()}
                 </summary>
                 <div class="partner-body">
-                  <p class="partner-copy">${partner.description}</p>
+                  <p class="partner-copy">${escapeHtml(partner.description)}</p>
                   ${ctaMarkup(partner)}
                 </div>
               </details>
@@ -1902,14 +1916,14 @@ const donateCta = {
               <div class="partner-head">
                 ${logoMarkup(partner, useLargeLogo ? "lg" : "md")}
                 <div>
-                  <h3 class="partner-title">${partner.name}</h3>
-                  <p class="partner-bento-lead">${partner.tagline}</p>
+                  <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
+                  <p class="partner-bento-lead">${escapeHtml(partner.tagline)}</p>
                 </div>
               </div>
-              <p class="${descClass}" style="margin-top:${spacing};">${partner.description}</p>
+              <p class="${descClass}" style="margin-top:${spacing};">${escapeHtml(partner.description)}</p>
             </div>
             <div class="partner-bento-foot">
-              <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
+              <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
                 Visit site
                 ${externalIconSmall()}
               </a>
@@ -1927,15 +1941,15 @@ const donateCta = {
 
     function movingCardsMarkup(reverse = false) {
       const row = PARTNERS.concat(PARTNERS).map((partner) => `
-        <a href="${partner.url}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
+        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
           <div class="partner-head">
             ${logoMarkup(partner)}
             <div>
-              <h3 class="partner-title">${partner.name}</h3>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
+              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
             </div>
           </div>
-          <p class="partner-copy">${partner.description}</p>
+          <p class="partner-copy">${escapeHtml(partner.description)}</p>
           <div class="partner-moving-card__foot" aria-hidden="true">
             <span>Open</span>
             ${externalIconSmall()}
@@ -1963,9 +1977,9 @@ const donateCta = {
 
     function pillMarkup(partner) {
       return `
-        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
           ${logoMarkup(partner)}
-          <span>${partner.name}</span>
+          <span>${escapeHtml(partner.name)}</span>
         </button>
       `;
     }
@@ -2145,11 +2159,11 @@ const donateCta = {
         <div class="partner-directory">
           <div class="partner-directory-list">
             ${PARTNERS.map((partner) => `
-              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${partner.id}">
+              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
                 ${logoMarkup(partner)}
                 <div>
-                  <div class="partner-title">${partner.name}</div>
-                  <small>${partner.tagline}</small>
+                  <div class="partner-title">${escapeHtml(partner.name)}</div>
+                  <small>${escapeHtml(partner.tagline)}</small>
                 </div>
               </button>
             `).join("")}
@@ -2168,9 +2182,9 @@ const donateCta = {
           <div class="partner-feature-grid">
             ${logoMarkup(partner, "lg")}
             <div>
-              <h3 class="partner-title" style="font-size:1.6rem;">${partner.name}</h3>
-              <p class="partner-spotlight-tagline">${partner.tagline}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${partner.description}</p>
+              <h3 class="partner-title" style="font-size:1.6rem;">${escapeHtml(partner.name)}</h3>
+              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
+              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
               ${ctaMarkup(partner)}
             </div>
           </div>
