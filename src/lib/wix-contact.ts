@@ -41,10 +41,10 @@ function envValue(name: string): string {
 
 function contactFieldMap() {
   return {
-    firstName: getEnv("WIX_CONTACT_FIELD_FIRST_NAME") || "first_name",
-    lastName: getEnv("WIX_CONTACT_FIELD_LAST_NAME") || "last_name",
-    email: getEnv("WIX_CONTACT_FIELD_EMAIL") || "email",
-    message: getEnv("WIX_CONTACT_FIELD_MESSAGE") || "message",
+    firstName: getEnv("WIX_CONTACT_FIELD_FIRST_NAME"),
+    lastName: getEnv("WIX_CONTACT_FIELD_LAST_NAME"),
+    email: getEnv("WIX_CONTACT_FIELD_EMAIL"),
+    message: getEnv("WIX_CONTACT_FIELD_MESSAGE"),
   };
 }
 
