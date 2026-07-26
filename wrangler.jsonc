@@ -3,6 +3,21 @@
   "name": "ucount-website",
   "compatibility_date": "2026-04-15",
   "keep_vars": true,
+  "observability": {
+    "enabled": false,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    },
+    "traces": {
+      "enabled": true,
+      "persist": true,
+      "head_sampling_rate": 1
+    }
+  },
   "vars": {
     "WIX_CONTACT_FORM_ID": "1a784f54-c174-4349-8d67-7dbf93214af5",
     "WIX_CONTACT_FIELD_FIRST_NAME": "first_name_5b78",
