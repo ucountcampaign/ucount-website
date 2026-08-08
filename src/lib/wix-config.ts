@@ -22,8 +22,4 @@ export const WIX_CONFIG_DEFAULTS: Record<string, string> = {
   WIX_CONTACT_FIELD_LAST_NAME: "last_name_3ab0",
   WIX_CONTACT_FIELD_EMAIL: "email_df1a",
   WIX_CONTACT_FIELD_MESSAGE: "message",
-
-  // Manually-created collections on the official Wix site keep immutable IDs
-  // such as "Import1".
-  WIX_CMS_COLLECTION_ALIASES: '{"SiteSettings":"Import1"}',
 };
