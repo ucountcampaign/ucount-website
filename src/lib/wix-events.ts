@@ -270,13 +270,38 @@ function textFromUnknown(value: unknown): string {
   return "";
 }
 
-function firstWixImageUrl(value: unknown): string {
+type WixDescriptionImage = {
+  url: string;
+  width?: number;
+  height?: number;
+};
+
+function positiveDimension(
+  record: Record<string, unknown> | null,
+  key: string,
+): number | undefined {
+  const value = record?.[key];
+
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : undefined;
+}
+
+function firstWixImage(value: unknown): WixDescriptionImage | null {
   if (!value || typeof value !== "object") {
-    return "";
+    return null;
   }
 
   if (Array.isArray(value)) {
-    return value.map(firstWixImageUrl).find(Boolean) ?? "";
+    for (const item of value) {
+      const found = firstWixImage(item);
+
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
   const record = value as Record<string, unknown>;
@@ -295,12 +320,22 @@ function firstWixImageUrl(value: unknown): string {
   const id = typeof src?.id === "string" ? src.id.trim() : "";
 
   if (id && /^[A-Za-z0-9_.~-]+$/.test(id)) {
-    return `https://static.wixstatic.com/media/${id}`;
+    return {
+      url: `https://static.wixstatic.com/media/${id}`,
+      width: positiveDimension(image, "width") ?? positiveDimension(src, "width"),
+      height: positiveDimension(image, "height") ?? positiveDimension(src, "height"),
+    };
   }
 
-  return ["nodes", "children"]
-    .map((key) => firstWixImageUrl(record[key]))
-    .find(Boolean) ?? "";
+  for (const key of ["nodes", "children"]) {
+    const found = firstWixImage(record[key]);
+
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
 }
 
 function truncateText(value: string, maxLength: number): string {
@@ -422,33 +457,66 @@ function eventEyebrow(event: WixEvent): string {
   return "Community";
 }
 
+/**
+ * Aspect ratio (width / height) at or above which an image is treated as a
+ * clearly landscape photo and center-cropped to 16:9. Square-ish and portrait
+ * images (flyers, posters) below the threshold are letterboxed instead so no
+ * artwork is cropped away.
+ */
+const LANDSCAPE_ASPECT_RATIO_THRESHOLD = 1.45;
+
+function eventImageLayout(image: WixDescriptionImage): EventImageLayout {
+  if (!image.width || !image.height) {
+    return "cover";
+  }
+
+  return image.width / image.height >= LANDSCAPE_ASPECT_RATIO_THRESHOLD
+    ? "cover"
+    : "contain";
+}
+
 function eventImage(
   event: WixEvent,
-  wixImageUrl: string,
+  wixImage: WixDescriptionImage | null,
 ): Pick<EventItem, "image" | "imageAlt" | "imageLayout"> {
+  const wixImageUrl = wixImage?.url ?? "";
+
   if (wixImageUrl.includes(marketplaceBoutiqueImageId)) {
     return {
       image: marketplaceBoutiqueImage,
       imageAlt: event.title?.trim() || "U COUNT Marketplace Boutique event image.",
-      imageLayout: "cover",
+      // The local marketplace asset is a square 920x920 flyer with text near
+      // the top and bottom edges, so cropping it to 16:9 would cut copy off.
+      imageLayout: "contain",
     };
   }
 
-  if (wixImageUrl) {
+  if (wixImage && wixImageUrl) {
+    const imageLayout = eventImageLayout(wixImage);
+
     return {
-      image: resizeWixImageUrl(wixImageUrl, {
-        width: 1200,
-        height: 675,
-        mode: "fill",
-      }),
+      image:
+        imageLayout === "contain"
+          ? resizeWixImageUrl(wixImageUrl, {
+              width: 1200,
+              height: 1200,
+              mode: "fit",
+            })
+          : resizeWixImageUrl(wixImageUrl, {
+              width: 1200,
+              height: 675,
+              mode: "fill",
+            }),
       imageAlt: event.title?.trim() || "U COUNT event image.",
-      imageLayout: "cover",
+      imageLayout,
     };
   }
 
   return {
     image: eventPlaceholderImage,
     imageAlt: "U COUNT event placeholder image.",
+    // The local placeholder is a 4:3 graphic with a small centered logo and
+    // wide plain margins, so a 16:9 center crop loses nothing important.
     imageLayout: "cover",
   };
 }
@@ -537,7 +605,7 @@ function normalizeEvent(event: WixEvent): EventItem | null {
     "Event details will be available soon.";
   const description = fullDescription || shortDescription;
   const originalUrl = eventOriginalUrl(event);
-  const image = eventImage(event, firstWixImageUrl(event.description));
+  const image = eventImage(event, firstWixImage(event.description));
   const available = registrationAvailable(event);
 
   return {
