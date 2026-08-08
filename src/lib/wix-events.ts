@@ -525,18 +525,14 @@ function eventImage(
     const imageLayout = eventImageLayout(wixImage);
 
     return {
-      image:
-        imageLayout === "contain"
-          ? resizeWixImageUrl(wixImageUrl, {
-              width: 1200,
-              height: 1200,
-              mode: "fit",
-            })
-          : resizeWixImageUrl(wixImageUrl, {
-              width: 1200,
-              height: 675,
-              mode: "fill",
-            }),
+      // Always fetch the uncropped rendition; cover layouts crop in CSS via
+      // object-cover, and the grid cards show the full image regardless of
+      // orientation.
+      image: resizeWixImageUrl(wixImageUrl, {
+        width: 1200,
+        height: 1200,
+        mode: "fit",
+      }),
       imageAlt: event.title?.trim() || "U COUNT event image.",
       imageLayout,
     };
