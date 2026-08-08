@@ -64,8 +64,8 @@ const upcomingInitialCount = 6;
 const pastInitialCount = 4;
 const featuredImageClass =
   featuredEvent?.imageLayout === "contain"
-    ? "mx-auto h-auto max-h-[30rem] max-w-full object-contain p-3"
-    : "aspect-video h-full w-full object-cover";
+    ? "h-full w-full bg-white object-contain p-3"
+    : "h-full w-full object-cover";
 
 const accentClass = (accent: EventAccent) =>
   ({
@@ -197,10 +197,7 @@ setPublicCacheControl(Astro.response.headers);
           </div>
         </div>
 
-        <div class:list={[
-          "overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm",
-          featuredEvent.imageLayout === "contain" ? "flex items-center justify-center" : "",
-        ]}>
+        <div class="aspect-video overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 shadow-sm">
           <img
             src={featuredEvent.image}
             alt={featuredEvent.imageAlt}

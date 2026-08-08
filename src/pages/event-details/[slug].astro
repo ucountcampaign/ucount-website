@@ -60,7 +60,7 @@ const forwardEvent = laterEvents[0];
 const backwardEvent = earlierEvents[0];
 const hasRelatedEvents = Boolean(forwardEvent || backwardEvent);
 const heroImage = event.image;
-const shouldShowDetailImage = event.image.startsWith(
+const shouldShowDetailImage = event.detailImage.startsWith(
   "https://static.wixstatic.com/media/",
 );
 const lifecycleLabel = event.lifecycle === "upcoming" ? "Upcoming" : "Past";
@@ -72,12 +72,12 @@ const mapHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComp
 const shareUrl = new URL(Astro.url.pathname, Astro.url.origin).toString();
 const shareText = `${event.title} - ${event.dateLabel}`;
 const detailImageFrameClass =
-  event.imageLayout === "contain"
-    ? "mt-8 flex justify-center overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-2 shadow-sm sm:p-3"
+  event.detailImageLayout === "contain"
+    ? "mt-8 aspect-video overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"
     : "mt-8 aspect-video overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100 shadow-sm";
 const detailImageClass =
-  event.imageLayout === "contain"
-    ? "h-auto max-h-[42rem] max-w-full object-contain"
+  event.detailImageLayout === "contain"
+    ? "h-full w-full object-contain p-3 sm:p-4"
     : "h-full w-full object-cover";
 
 const shareImageUrl = event.image.startsWith("https://static.wixstatic.com/")
@@ -203,7 +203,7 @@ const eventFocus = (
         {shouldShowDetailImage && (
           <div class={detailImageFrameClass}>
             <img
-              src={event.image}
+              src={event.detailImage}
               alt={event.imageAlt}
               class={detailImageClass}
               loading="eager"

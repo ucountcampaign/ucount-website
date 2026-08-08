@@ -118,7 +118,7 @@ export const defaultSiteSettings: ResolvedSiteSettings = {
   cityStateZip: "Fort Collins, CO 80525",
   ein: "84-0470239",
   facebookUrl: "https://www.facebook.com/UCOUNTCampaign",
-  instagramUrl: "https://www.instagram.com/ucountnoco/",
+  instagramUrl: "https://www.instagram.com/ucountcampaign",
   organizationSummary:
     "With hope, courage, compassion, and vision, we fight trafficking through prevention, awareness, and restoration so every person is met with dignity and justice.",
 };

@@ -29,6 +29,8 @@ export type EventItem = {
   image: string;
   imageAlt: string;
   imageLayout: EventImageLayout;
+  detailImage: string;
+  detailImageLayout: EventImageLayout;
   detailHref: string;
   originalUrl: string;
   registrationHref: string;
@@ -60,6 +62,7 @@ type WixEvent = {
   slug?: string | null;
   status?: string | null;
   description?: unknown;
+  mainImage?: unknown;
   shortDescription?: string | null;
   detailedDescription?: unknown;
   eventPageUrl?: {
@@ -270,13 +273,38 @@ function textFromUnknown(value: unknown): string {
   return "";
 }
 
-function firstWixImageUrl(value: unknown): string {
+type WixEventImageSource = {
+  url: string;
+  width?: number;
+  height?: number;
+};
+
+function positiveDimension(
+  record: Record<string, unknown> | null,
+  key: string,
+): number | undefined {
+  const value = record?.[key];
+
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : undefined;
+}
+
+function firstWixImage(value: unknown): WixEventImageSource | null {
   if (!value || typeof value !== "object") {
-    return "";
+    return null;
   }
 
   if (Array.isArray(value)) {
-    return value.map(firstWixImageUrl).find(Boolean) ?? "";
+    for (const item of value) {
+      const found = firstWixImage(item);
+
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
   }
 
   const record = value as Record<string, unknown>;
@@ -295,12 +323,49 @@ function firstWixImageUrl(value: unknown): string {
   const id = typeof src?.id === "string" ? src.id.trim() : "";
 
   if (id && /^[A-Za-z0-9_.~-]+$/.test(id)) {
-    return `https://static.wixstatic.com/media/${id}`;
+    return {
+      url: `https://static.wixstatic.com/media/${id}`,
+      width: positiveDimension(image, "width") ?? positiveDimension(src, "width"),
+      height: positiveDimension(image, "height") ?? positiveDimension(src, "height"),
+    };
   }
 
-  return ["nodes", "children"]
-    .map((key) => firstWixImageUrl(record[key]))
-    .find(Boolean) ?? "";
+  for (const key of ["nodes", "children"]) {
+    const found = firstWixImage(record[key]);
+
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
+function eventMainImage(event: WixEvent): WixEventImageSource | null {
+  if (!event.mainImage || typeof event.mainImage !== "object") {
+    return null;
+  }
+
+  const record = event.mainImage as Record<string, unknown>;
+  const url = typeof record.url === "string" ? record.url.trim() : "";
+
+  if (!url) {
+    return null;
+  }
+
+  try {
+    if (!new URL(url).hostname.endsWith("wixstatic.com")) {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
+  return {
+    url,
+    width: positiveDimension(record, "width"),
+    height: positiveDimension(record, "height"),
+  };
 }
 
 function truncateText(value: string, maxLength: number): string {
@@ -422,33 +487,66 @@ function eventEyebrow(event: WixEvent): string {
   return "Community";
 }
 
+/**
+ * Aspect ratio (width / height) at or above which an image is treated as a
+ * clearly landscape photo and center-cropped to 16:9. Square-ish and portrait
+ * images (flyers, posters) below the threshold are letterboxed instead so no
+ * artwork is cropped away.
+ */
+const LANDSCAPE_ASPECT_RATIO_THRESHOLD = 1.45;
+
+function eventImageLayout(image: WixEventImageSource): EventImageLayout {
+  if (!image.width || !image.height) {
+    return "cover";
+  }
+
+  return image.width / image.height >= LANDSCAPE_ASPECT_RATIO_THRESHOLD
+    ? "cover"
+    : "contain";
+}
+
 function eventImage(
   event: WixEvent,
-  wixImageUrl: string,
+  wixImage: WixEventImageSource | null,
 ): Pick<EventItem, "image" | "imageAlt" | "imageLayout"> {
+  const wixImageUrl = wixImage?.url ?? "";
+
   if (wixImageUrl.includes(marketplaceBoutiqueImageId)) {
     return {
       image: marketplaceBoutiqueImage,
       imageAlt: event.title?.trim() || "U COUNT Marketplace Boutique event image.",
-      imageLayout: "cover",
+      // The local marketplace asset is a square 920x920 flyer with text near
+      // the top and bottom edges, so cropping it to 16:9 would cut copy off.
+      imageLayout: "contain",
     };
   }
 
-  if (wixImageUrl) {
+  if (wixImage && wixImageUrl) {
+    const imageLayout = eventImageLayout(wixImage);
+
     return {
-      image: resizeWixImageUrl(wixImageUrl, {
-        width: 1200,
-        height: 675,
-        mode: "fill",
-      }),
+      image:
+        imageLayout === "contain"
+          ? resizeWixImageUrl(wixImageUrl, {
+              width: 1200,
+              height: 1200,
+              mode: "fit",
+            })
+          : resizeWixImageUrl(wixImageUrl, {
+              width: 1200,
+              height: 675,
+              mode: "fill",
+            }),
       imageAlt: event.title?.trim() || "U COUNT event image.",
-      imageLayout: "cover",
+      imageLayout,
     };
   }
 
   return {
     image: eventPlaceholderImage,
     imageAlt: "U COUNT event placeholder image.",
+    // The local placeholder is a 4:3 graphic with a small centered logo and
+    // wide plain margins, so a 16:9 center crop loses nothing important.
     imageLayout: "cover",
   };
 }
@@ -537,7 +635,15 @@ function normalizeEvent(event: WixEvent): EventItem | null {
     "Event details will be available soon.";
   const description = fullDescription || shortDescription;
   const originalUrl = eventOriginalUrl(event);
-  const image = eventImage(event, firstWixImageUrl(event.description));
+  // Split image roles: cards, listings, and the detail-page hero prefer the
+  // event's dedicated main image, while the detail-page body prefers the
+  // description-embedded image (usually the text-heavy flyer, which belongs
+  // where people read). Whichever source is missing falls back to the other,
+  // and each is classified for cover/contain independently.
+  const descriptionImage = firstWixImage(event.description);
+  const mainImage = eventMainImage(event);
+  const cardImage = eventImage(event, mainImage ?? descriptionImage);
+  const detailImage = eventImage(event, descriptionImage ?? mainImage);
   const available = registrationAvailable(event);
 
   return {
@@ -564,9 +670,11 @@ function normalizeEvent(event: WixEvent): EventItem | null {
     status: event.status ?? "",
     lifecycle: eventLifecycle(event),
     accent: eventAccent(event),
-    image: image.image,
-    imageAlt: image.imageAlt,
-    imageLayout: image.imageLayout,
+    image: cardImage.image,
+    imageAlt: cardImage.imageAlt,
+    imageLayout: cardImage.imageLayout,
+    detailImage: detailImage.image,
+    detailImageLayout: detailImage.imageLayout,
     detailHref: `/event-details/${slug}`,
     originalUrl,
     registrationHref: available ? registrationHref(event) : "",
