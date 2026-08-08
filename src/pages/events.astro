@@ -238,12 +238,7 @@ setPublicCacheControl(Astro.response.headers);
                   <img
                     src={event.image}
                     alt={event.imageAlt}
-                    class:list={[
-                      "h-64 w-full md:h-full",
-                      event.imageLayout === "contain"
-                        ? "bg-white object-contain p-4"
-                        : "object-cover",
-                    ]}
+                    class="h-64 w-full bg-white object-contain p-4 md:h-full"
                     loading="lazy"
                     decoding="async"
                   />
