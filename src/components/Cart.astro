@@ -443,6 +443,19 @@ const checkoutErrorMessage =
     }
   });
 
+  // Restore the checkout button when returning via back/forward cache,
+  // which resurrects the page with the button still disabled.
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    if (checkoutButton) {
+      checkoutButton.disabled = false;
+    }
+    if (checkoutLabel) {
+      checkoutLabel.textContent = "Checkout";
+    }
+    render();
+  });
+
   if (
     new URLSearchParams(window.location.search).get("checkout") === "error" &&
     readCart().length > 0
