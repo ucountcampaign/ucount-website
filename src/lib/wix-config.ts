@@ -14,6 +14,11 @@
 export const WIX_CONFIG_DEFAULTS: Record<string, string> = {
   WIX_SITE_ID: "a73b0895-820a-424a-8f69-053753fa007c",
 
+  // Wix still emits checkout URLs on the primary site domain. After that domain
+  // moved to Astro, rewrite them onto the Wix-connected checkout subdomain so
+  // /checkout is not handled by the Worker.
+  WIX_CHECKOUT_BASE_URL: "https://checkout.ucountcampaign.org",
+
   // The modern Wix Forms "Astro Contact Form" schema. The field targets are
   // immutable once the form exists, so a mismatch here silently submits to
   // field keys Wix does not have.

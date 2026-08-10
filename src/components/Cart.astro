@@ -59,7 +59,13 @@ const checkoutErrorMessage =
         {checkoutErrorMessage}
       </p>
 
-      <form action="/api/checkout" method="POST" data-cart-checkout-form class="mt-4">
+      <form
+        action="/api/checkout"
+        method="POST"
+        data-astro-reload
+        data-cart-checkout-form
+        class="mt-4"
+      >
         <input type="hidden" name="cart" value="" data-cart-payload />
         <button
           type="submit"

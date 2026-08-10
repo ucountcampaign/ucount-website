@@ -26,6 +26,8 @@ export type PageContent = {
   image?: string | null;
   mobileImage?: string | null;
   backgroundImage?: string | null;
+  socialImage?: string | null;
+  socialImageAlt?: string | null;
 };
 
 export type SiteSettings = {

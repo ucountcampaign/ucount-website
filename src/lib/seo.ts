@@ -23,7 +23,7 @@ export const SITE_URL = configuredSiteUrl || "http://localhost:4321";
 
 export const SOCIAL_IMAGE_WIDTH = 1200;
 export const SOCIAL_IMAGE_HEIGHT = 630;
-export const DEFAULT_SOCIAL_IMAGE = "/assets/events/ucount-marketplace-boutique-borderless.jpg";
+export const DEFAULT_SOCIAL_IMAGE = "/assets/ucount-logo-social.png";
 export const DEFAULT_SOCIAL_IMAGE_ALT =
   "U COUNT anti-trafficking work through prevention, awareness, restoration, and marketplace support";
 
@@ -117,32 +117,19 @@ export function openGraphWixImageUrl(
   }
 }
 
-function firstNonEmptyText(...values: Array<string | null | undefined>): string {
-  for (const value of values) {
-    const trimmed = value?.trim();
+export function resolveSocialImageMeta(
+  content: PageContent | null | undefined,
+): Pick<SeoMeta, "image" | "imageAlt"> {
+  const socialImage = content?.socialImage?.trim();
 
-    if (trimmed) {
-      return trimmed;
-    }
+  if (!socialImage) {
+    return { image: DEFAULT_SOCIAL_IMAGE, imageAlt: DEFAULT_SOCIAL_IMAGE_ALT };
   }
 
-  return "";
-}
-
-export function resolveHeroSocialImage(
-  heroContent: PageContent | null | undefined,
-  fallbackHeroContent?: PageContent | null,
-  localFallback = DEFAULT_SOCIAL_IMAGE,
-): string {
-  return openGraphWixImageUrl(
-    firstNonEmptyText(
-      heroContent?.image,
-      heroContent?.backgroundImage,
-      fallbackHeroContent?.image,
-      fallbackHeroContent?.backgroundImage,
-      localFallback,
-    ),
-  );
+  return {
+    image: openGraphWixImageUrl(socialImage),
+    imageAlt: content?.socialImageAlt?.trim() || DEFAULT_SOCIAL_IMAGE_ALT,
+  };
 }
 
 export function safeJsonLd(data: unknown): string {
@@ -178,7 +165,7 @@ export function organizationSchema(site: ResolvedSiteSettings, siteUrl = SITE_UR
     name: site.siteName,
     alternateName: "U COUNT Campaign",
     url: siteUrl,
-    logo: absoluteUrl("/assets/ucount-logo.jpg", siteUrl),
+    logo: absoluteUrl("/assets/ucount-logo.png", siteUrl),
     image: absoluteUrl(DEFAULT_SOCIAL_IMAGE, siteUrl),
     description: site.organizationSummary,
     foundingDate: "2007",
