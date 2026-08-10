@@ -6,9 +6,16 @@ export type WixImageResizeOptions = {
 };
 
 function wixImageUriToUrl(value: string): string {
-  const match = value.match(/^wix:image:\/\/v1\/([^/#?]+)/i);
+  const imageMatch = value.match(/^wix:image:\/\/v1\/([^/#?]+)/i);
 
-  return match ? `https://static.wixstatic.com/media/${match[1]}` : "";
+  if (imageMatch) {
+    return `https://static.wixstatic.com/media/${imageMatch[1]}`;
+  }
+
+  // SVG uploads are stored as vector URIs and served from /shapes/, not /media/.
+  const vectorMatch = value.match(/^wix:vector:\/\/v1\/([^/#?]+)/i);
+
+  return vectorMatch ? `https://static.wixstatic.com/shapes/${vectorMatch[1]}` : "";
 }
 
 export function resolveWixImageUrl(value: unknown, fallback = ""): string {
@@ -88,7 +95,13 @@ export function resizeWixImageUrl(
   try {
     const parsedUrl = new URL(resolvedUrl);
 
-    if (!parsedUrl.hostname.endsWith("wixstatic.com")) {
+    // Resize transforms only exist for raster files under /media/; applying
+    // them to /shapes/ (SVG) URLs returns a 403, and SVGs scale anyway.
+    if (
+      !parsedUrl.hostname.endsWith("wixstatic.com") ||
+      parsedUrl.pathname.startsWith("/shapes/") ||
+      /\.svg$/i.test(parsedUrl.pathname)
+    ) {
       return resolvedUrl;
     }
 
