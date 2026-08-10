@@ -77,6 +77,7 @@ export type Partner = {
   tagline?: string | null;
   description?: string | null;
   websiteUrl?: string | null;
+  featured?: boolean | null;
   region?: string | null;
 };
 

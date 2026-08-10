@@ -321,21 +321,6 @@ const localizeInternalUrl = (url: string) => {
 
 hero.primaryCtaUrl = localizeInternalUrl(hero.primaryCtaUrl);
 
-// Locally held logos at full resolution. The copies in the CMS are small
-// enough to look soft once the spotlight mark is rendered at 8rem, so prefer
-// a bundled asset when we have one and fall back to the CMS image otherwise.
-const partnerLogoAssets: Record<string, string> = {
-  "project-rescue": "/assets/partners/project-rescue.png",
-  "stop-the-traffik": "/assets/partners/stop-the-traffik.png",
-  "atlas-free": "/assets/partners/atlas-free.png",
-  "global-family": "/assets/partners/global-family.png",
-  "sarahs-home": "/assets/partners/sarahs-home.png",
-  "daniel-academy": "/assets/partners/daniel-academy.png",
-  "a-courageous-rose": "/assets/partners/a-courageous-rose.webp",
-  "justice-now": "/assets/partners/justice-now-noco-official.webp",
-  "restoring-freedom-workshop": "/assets/partners/restoring-freedom-workshop.jpg",
-};
-
 const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).map(
   (partner) => {
     const id = cmsText(
@@ -346,9 +331,11 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
     return {
       id,
       name: cmsText(partner.name, "Partner"),
-      logo:
-        partnerLogoAssets[id] ??
+      logo: resizeWixImageUrl(
         cmsImageUrl(partner.logo, "/assets/partners/justice-now-noco-official.webp"),
+        { width: 512, height: 512, mode: "fit" },
+      ),
+      featured: partner.featured === true,
       tagline: cmsText(partner.tagline, ""),
       description: cmsText(partner.description, ""),
       url: cmsText(partner.websiteUrl, "#"),
@@ -357,7 +344,7 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
 );
 
 const initialPartnerId =
-  partnerCards.find((partner) => partner.id === "sarahs-home")?.id ?? partnerCards[0]?.id;
+  partnerCards.find((partner) => partner.featured)?.id ?? partnerCards[0]?.id;
 const storeProducts = storeProductsResult.products;
 const heroImage = resizeWixImageUrl(hero.image, {
   width: 960,
