@@ -1696,7 +1696,14 @@ const donateCta = {
   </section>
 
 <script type="application/json" id="partners-data" set:html={partnersJson}></script>
-  <script is:inline>
+  <script is:inline data-astro-rerun>
+    // The ClientRouter swaps the body without reloading the page, so this
+    // script re-executes in the same global scope whenever the visitor
+    // client-navigates back to the home page (data-astro-rerun makes that
+    // guaranteed rather than incidental). The IIFE keeps every const/let
+    // local to this run — without it the redeclaration of PARTNERS throws a
+    // SyntaxError and the Partners section renders blank until a hard refresh.
+    (() => {
     const PARTNERS = JSON.parse(document.getElementById("partners-data")?.textContent || "[]");
 
     const PARTNER_VARIANTS = [
@@ -1709,6 +1716,9 @@ const donateCta = {
 
     const partnerStage = document.getElementById("partnerStage");
     const partnerSwitch = document.getElementById("partnerSwitch");
+    if (!partnerStage || !PARTNERS.length) {
+      return;
+    }
     let activeVariant = "pills-spotlight";
     let activePartnerId = PARTNERS[0].id;
 
@@ -2354,5 +2364,6 @@ const donateCta = {
 
     activeVariant = "pills-spotlight";
     renderPartnersLab();
+    })();
   </script>
 </BaseLayout>
