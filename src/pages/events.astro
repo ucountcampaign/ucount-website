@@ -15,15 +15,14 @@ import {
   breadcrumbSchema,
   eventItemListSchema,
   getSiteUrl,
-  resolveHeroSocialImage,
+  resolveSocialImageMeta,
   truncateDescription,
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
-const [siteSettings, heroContent, homeHeroContent, featuredContent, calendarContent, pastEventsContent, eventsResult] = await Promise.all([
+const [siteSettings, heroContent, featuredContent, calendarContent, pastEventsContent, eventsResult] = await Promise.all([
   getSiteSettings(),
   getPageSection("events", "hero"),
-  getPageSection("home", "hero"),
   getPageSection("events", "featured-event-intro"),
   getPageSection("events", "calendar-intro"),
   getPageSection("events", "past-events-intro"),
@@ -50,11 +49,6 @@ const calendarIntro = {
 const pastEventsIntro = {
   eyebrow: cmsText(pastEventsContent?.eyebrow, "Recent Past Events"),
 };
-const heroShareImage = resolveHeroSocialImage(
-  heroContent,
-  homeHeroContent,
-  "/assets/photos/IMG_4722.jpg",
-);
 const eventsDescription = truncateDescription(hero.body);
 
 const upcomingEvents = eventsResult.upcomingEvents;
@@ -105,8 +99,7 @@ setPublicCacheControl(Astro.response.headers);
     description: eventsDescription,
     canonicalPath: "/events",
     schemaType: "CollectionPage",
-    image: heroShareImage,
-    imageAlt: "U COUNT community event",
+    ...resolveSocialImageMeta(heroContent),
     keywords: [
       "U COUNT events",
       "anti-trafficking events",

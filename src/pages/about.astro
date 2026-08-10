@@ -13,7 +13,7 @@ import {
 import {
   breadcrumbSchema,
   getSiteUrl,
-  resolveHeroSocialImage,
+  resolveSocialImageMeta,
   truncateDescription,
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
@@ -21,7 +21,6 @@ import { setPublicCacheControl } from "../lib/cache";
 const [
   siteSettings,
   heroContent,
-  homeHeroContent,
   missionContent,
   leadershipContent,
   valuesContent,
@@ -32,7 +31,6 @@ const [
 ] = await Promise.all([
   getSiteSettings(),
   getPageSection("about", "hero"),
-  getPageSection("home", "hero"),
   getPageSection("about", "mission-intro"),
   getPageSection("about", "leadership-intro"),
   getPageSection("about", "values-intro"),
@@ -53,12 +51,6 @@ const hero = {
     "U COUNT is a 100% volunteer organization, including its leadership. Each of us volunteers our time and talents because we wholeheartedly believe that every person has value and deserves freedom.",
   ),
 };
-const heroShareImage = resolveHeroSocialImage(
-  heroContent,
-  homeHeroContent,
-  "/assets/photos/IMG_3234.jpg",
-);
-
 const mission = {
   eyebrow: cmsText(missionContent?.eyebrow, "What We Do"),
   title: cmsText(missionContent?.title, "Our Mission"),
@@ -177,8 +169,7 @@ const aboutDescription = truncateDescription(hero.body);
     description: aboutDescription,
     canonicalPath: "/about",
     schemaType: "AboutPage",
-    image: heroShareImage,
-    imageAlt: "U COUNT volunteers and leadership serving the anti-trafficking mission",
+    ...resolveSocialImageMeta(heroContent),
     keywords: ["U COUNT mission", "anti-trafficking volunteers", "human trafficking nonprofit"],
   }}
   structuredData={[

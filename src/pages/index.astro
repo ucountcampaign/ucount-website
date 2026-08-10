@@ -14,7 +14,7 @@ import {
   resolveSiteSettings,
 } from "../lib/wix-cms";
 import { createWixImageSrcSet, resizeWixImageUrl } from "../lib/images";
-import { resolveHeroSocialImage, truncateDescription } from "../lib/seo";
+import { resolveSocialImageMeta, truncateDescription } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
 
 const [
@@ -363,7 +363,6 @@ const heroImage = resizeWixImageUrl(hero.image, {
   height: 722,
   mode: "fit",
 });
-const heroShareImage = resolveHeroSocialImage(heroContent);
 const heroImageSrcSet = createWixImageSrcSet(
   hero.image,
   [
@@ -418,8 +417,7 @@ const donateCta = {
   meta={{
     description: homeDescription,
     canonicalPath: "/",
-    image: heroShareImage,
-    imageAlt: "U COUNT anti-trafficking work through prevention, awareness, and restoration",
+    ...resolveSocialImageMeta(heroContent),
     keywords: [
       "U COUNT",
       "human trafficking prevention",
