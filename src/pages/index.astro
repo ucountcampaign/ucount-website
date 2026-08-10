@@ -356,7 +356,8 @@ const partnerCards = (partnersResult.length ? partnersResult : defaultPartners).
   },
 );
 
-const partnersJson = JSON.stringify(partnerCards).replace(/</g, "\\u003c");
+const initialPartnerId =
+  partnerCards.find((partner) => partner.id === "sarahs-home")?.id ?? partnerCards[0]?.id;
 const storeProducts = storeProductsResult.products;
 const heroImage = resizeWixImageUrl(hero.image, {
   width: 960,
@@ -1196,18 +1197,19 @@ const donateCta = {
       transition: min-height 0.2s ease;
     }
 
-    .partner-spotlight-measure {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      visibility: hidden;
-      pointer-events: none;
-      z-index: -1;
+    /* Every spotlight panel is server-rendered and stacked in the same grid
+       cell, so the mount is always as tall as the tallest panel and switching
+       partners never shifts the layout below — no JS measuring needed. */
+    .partner-spotlight-stack {
+      display: grid;
     }
 
-    .partner-spotlight-measure .partner-spotlight-panel {
-      min-height: auto;
+    .partner-spotlight-stack > .partner-spotlight-panel {
+      grid-area: 1 / 1;
+    }
+
+    .partner-spotlight-stack > .partner-spotlight-panel:not(.is-active) {
+      visibility: hidden;
     }
 
     .partner-spotlight-meta {
@@ -1588,7 +1590,61 @@ const donateCta = {
         <p class="text-neutral-500 max-w-2xl">{partnersIntro.body}</p>
       </div>
 
-      <div id="partnerStage" class="partner-stage"></div>
+      <div id="partnerStage" class="partner-stage">
+        <div
+          id="partnerPillsScroll"
+          class="partner-marquee-shell partner-pills-shell"
+          aria-label="Partner pills — drag to move within the marquee"
+        >
+          <div class="partner-pills-row">
+            {/* Pills are rendered twice so the marquee can loop seamlessly at
+                translateX(-50%); the second copy is hidden from assistive tech
+                and the tab order. */}
+            {[...partnerCards, ...partnerCards].map((partner, index) => (
+              <button
+                type="button"
+                class:list={["partner-pill-button", { "is-active": partner.id === initialPartnerId }]}
+                data-partner-id={partner.id}
+                aria-hidden={index >= partnerCards.length ? "true" : undefined}
+                tabindex={index >= partnerCards.length ? -1 : undefined}
+              >
+                <div class="partner-logo-wrap">
+                  <img src={partner.logo} alt={partner.name} class="partner-logo" loading="lazy" decoding="async">
+                </div>
+                <span>{partner.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div id="partnerSpotlightMount" class="partner-spotlight-stack">
+          {partnerCards.map((partner) => (
+            <div
+              class:list={["partner-spotlight-panel", { "is-active": partner.id === initialPartnerId }]}
+              data-partner-panel={partner.id}
+            >
+              <div class="partner-spotlight-meta">Partner focus</div>
+              <div class="partner-spotlight-layout">
+                <div class="partner-spotlight-identity">
+                  <div class="partner-logo-wrap partner-logo-wrap--lg">
+                    <img src={partner.logo} alt={partner.name} class="partner-logo partner-logo--lg" loading="lazy" decoding="async">
+                  </div>
+                  <h3 class="partner-title">{partner.name}</h3>
+                </div>
+                <div>
+                  <p class="partner-spotlight-tagline">{partner.tagline}</p>
+                  <p class="partner-copy" style="margin-top:1rem;">{partner.description}</p>
+                  <a href={partner.url} target="_blank" rel="noopener noreferrer" class="partner-cta">
+                    Visit Partner
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1695,675 +1751,244 @@ const donateCta = {
     </div>
   </section>
 
-<script type="application/json" id="partners-data" set:html={partnersJson}></script>
-  <script is:inline data-astro-rerun>
-    // The ClientRouter swaps the body without reloading the page, so this
-    // script re-executes in the same global scope whenever the visitor
-    // client-navigates back to the home page (data-astro-rerun makes that
-    // guaranteed rather than incidental). The IIFE keeps every const/let
-    // local to this run — without it the redeclaration of PARTNERS throws a
-    // SyntaxError and the Partners section renders blank until a hard refresh.
-    (() => {
-    const PARTNERS = JSON.parse(document.getElementById("partners-data")?.textContent || "[]");
-
-    const PARTNER_VARIANTS = [
-      { id: "accordion", label: "Accordion" },
-      { id: "bento", label: "Bento" },
-      { id: "moving-cards", label: "Moving Cards" },
-      { id: "pills-spotlight", label: "Pills + Spotlight" },
-      { id: "directory", label: "Directory Spotlight" },
-    ];
-
-    const partnerStage = document.getElementById("partnerStage");
-    const partnerSwitch = document.getElementById("partnerSwitch");
-    if (!partnerStage || !PARTNERS.length) {
+<script>
+  // All partner content is server-rendered; this script only wires up the
+  // marquee drag-scrub and the spotlight switching. It is a module script, so
+  // it executes once per browser session — the astro:page-load listener (the
+  // ClientRouter fires it after every swap, and on first load) re-initializes
+  // the fresh DOM, and the data-partners-bound guard keeps the direct call
+  // plus the first astro:page-load from double-binding.
+  function initPartners() {
+    const stage = document.getElementById("partnerStage");
+    if (!stage || stage.dataset.partnersBound === "true") {
       return;
     }
-    let activeVariant = "pills-spotlight";
-    let activePartnerId = PARTNERS[0].id;
+    stage.dataset.partnersBound = "true";
 
-    function partnerById(id) {
-      return PARTNERS.find((partner) => partner.id === id) || PARTNERS[0];
+    const panels = Array.from(stage.querySelectorAll("[data-partner-panel]"));
+    const pills = Array.from(stage.querySelectorAll("[data-partner-id]"));
+    let activePartnerId =
+      panels.find((panel) => panel.classList.contains("is-active"))?.dataset.partnerPanel || "";
+    let panelAnimating = false;
+
+    function panelFor(id) {
+      return panels.find((panel) => panel.dataset.partnerPanel === id);
     }
 
-    function externalIcon() {
-      return `
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-      `;
-    }
-
-    function externalIconSmall() {
-      return `
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-      `;
-    }
-
-    // Partner records come from the CMS and are pasted into innerHTML by the
-    // markup builders below. Escape every interpolated field so a stray angle
-    // bracket or quote in a name or description cannot close the surrounding
-    // tag and inject markup.
-    function escapeHtml(value) {
-      return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      })[character]);
-    }
-
-    function chevronIcon() {
-      return `
-        <svg class="partner-chevron chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-        </svg>
-      `;
-    }
-
-    function logoMarkup(partner, size = "md") {
-      const wrapperClass = size === "lg" ? "partner-logo-wrap partner-logo-wrap--lg" : "partner-logo-wrap";
-      const imageClass = size === "lg" ? "partner-logo partner-logo--lg" : "partner-logo";
-      return `
-        <div class="${wrapperClass}">
-          <img src="${escapeHtml(partner.logo)}" alt="${escapeHtml(partner.name)}" class="${imageClass}">
-        </div>
-      `;
-    }
-
-    function ctaMarkup(partner) {
-      return `
-        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-cta">
-          Visit Partner
-          ${externalIcon()}
-        </a>
-      `;
-    }
-
-    function spotlightContent(partner, metaLabel, animate) {
-      return `
-        <div class="partner-spotlight-panel"${animate ? ' data-animate="true"' : ""}>
-          <div class="partner-spotlight-meta">${metaLabel}</div>
-          <div class="partner-spotlight-layout">
-            <div class="partner-spotlight-identity">
-              ${logoMarkup(partner, "lg")}
-              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
-            </div>
-            <div>
-              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
-              ${ctaMarkup(partner)}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderSwitch() {
-      if (!partnerSwitch) {
-        return;
-      }
-
-      partnerSwitch.innerHTML = PARTNER_VARIANTS.map((variant) => `
-        <button
-          type="button"
-          class="partner-switch-btn${variant.id === activeVariant ? " is-active" : ""}"
-          data-variant="${variant.id}"
-          aria-pressed="${variant.id === activeVariant ? "true" : "false"}"
-        >
-          ${variant.label}
-        </button>
-      `).join("");
-    }
-
-    function applyAccordionWatermarks() {
-      partnerStage.querySelectorAll(".partner-accordion-wm-img").forEach((img, index) => {
-        const partner = PARTNERS[index];
-        const href = partner?.logo;
-        if (href) {
-          img.src = href;
-          img.alt = `${partner.name} logo watermark`;
-        }
+    function syncPills() {
+      pills.forEach((pill) => {
+        pill.classList.toggle("is-active", pill.dataset.partnerId === activePartnerId);
       });
     }
 
-    function syncAccordionWatermarkVisibility() {
-      if (activeVariant !== "accordion") {
+    function swapSpotlight() {
+      if (panelAnimating) {
+        // The pending animationend handler reads activePartnerId again, so it
+        // will reveal whichever partner was selected last.
         return;
       }
-      const stacks = partnerStage.querySelectorAll(".partner-accordion-stack");
-      if (!stacks.length) {
+      const current = panels.find((panel) => panel.classList.contains("is-active"));
+      const next = panelFor(activePartnerId);
+      if (!next || next === current) {
         return;
       }
-      const twoCol = window.matchMedia("(min-width: 768px)").matches;
-      stacks.forEach((stack, index) => {
-        const wm = stack.querySelector(".partner-accordion-wm");
-        const details = stack.querySelector("details.partner-accordion-card");
-        if (!wm || !details) {
+      if (!current) {
+        next.classList.add("is-active");
+        next.setAttribute("data-animate", "true");
+        return;
+      }
+      panelAnimating = true;
+      current.setAttribute("data-animate-out", "true");
+      let finalized = false;
+      const finalize = () => {
+        if (finalized) {
           return;
         }
-        let show = false;
-        if (twoCol) {
-          const neighborIndex = index % 2 === 0 ? index + 1 : index - 1;
-          const neighborStack = stacks[neighborIndex];
-          const neighborDetails = neighborStack?.querySelector("details.partner-accordion-card");
-          if (neighborDetails) {
-            const neighborOpen = neighborDetails.hasAttribute("open");
-            const selfOpen = details.hasAttribute("open");
-            show = neighborOpen && !selfOpen;
-          }
+        finalized = true;
+        clearTimeout(fallbackTimer);
+        panelAnimating = false;
+        current.classList.remove("is-active");
+        current.removeAttribute("data-animate-out");
+        current.removeAttribute("data-animate");
+        const target = panelFor(activePartnerId);
+        if (target) {
+          target.classList.add("is-active");
+          target.setAttribute("data-animate", "true");
         }
-        wm.classList.toggle("partner-accordion-wm--visible", show);
-        wm.setAttribute("aria-hidden", show ? "false" : "true");
-      });
-    }
-
-    function renderAccordion() {
-      partnerStage.innerHTML = `
-        <div class="partner-accordion-grid">
-          ${PARTNERS.map((partner, index) => `
-            <div class="partner-accordion-stack">
-              <div class="partner-accordion-wm" aria-hidden="true">
-                <img class="partner-accordion-wm-img" alt="${escapeHtml(partner.name)} logo watermark" decoding="async" loading="lazy" />
-              </div>
-              <details class="partner-accordion-card">
-                <summary class="partner-accordion-summary">
-                  <div class="partner-head">
-                    ${logoMarkup(partner)}
-                    <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
-                  </div>
-                  ${chevronIcon()}
-                </summary>
-                <div class="partner-body">
-                  <p class="partner-copy">${escapeHtml(partner.description)}</p>
-                  ${ctaMarkup(partner)}
-                </div>
-              </details>
-            </div>
-          `).join("")}
-        </div>
-      `;
-      applyAccordionWatermarks();
-      syncAccordionWatermarkVisibility();
-      requestAnimationFrame(() => {
-        syncAccordionWatermarkVisibility();
-      });
-      partnerStage.querySelectorAll("details.partner-accordion-card").forEach((detailsEl) => {
-        detailsEl.addEventListener("toggle", syncAccordionWatermarkVisibility);
-      });
-    }
-
-    function renderBento() {
-      const layoutByIndex = [
-        { kind: "hero" },
-        { kind: "side" },
-        { kind: "side" },
-        { kind: "standard" },
-        { kind: "standard" },
-        { kind: "tall" },
-        { kind: "compact" },
-        { kind: "compact" },
-        { kind: "wide" },
-        { kind: "compact" },
-      ];
-
-      const cards = PARTNERS.map((partner, index) => {
-        const config = layoutByIndex[index] || { kind: "standard" };
-        const className = `partner-bento-card partner-bento-card--${config.kind}`;
-        const useLargeLogo = config.kind === "hero";
-        const shouldClamp = config.kind === "standard" || config.kind === "tall" || config.kind === "wide";
-        const descClass = shouldClamp ? "partner-copy partner-bento-desc--clamp" : "partner-copy";
-        const spacing = config.kind === "hero" ? "0.85rem" : "0.65rem";
-
-        return `
-          <article class="${className}">
-            <div class="partner-bento-card__main">
-              <div class="partner-head">
-                ${logoMarkup(partner, useLargeLogo ? "lg" : "md")}
-                <div>
-                  <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
-                  <p class="partner-bento-lead">${escapeHtml(partner.tagline)}</p>
-                </div>
-              </div>
-              <p class="${descClass}" style="margin-top:${spacing};">${escapeHtml(partner.description)}</p>
-            </div>
-            <div class="partner-bento-foot">
-              <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-bento-open">
-                Visit site
-                ${externalIconSmall()}
-              </a>
-            </div>
-          </article>
-        `;
-      }).join("");
-
-      partnerStage.innerHTML = `
-        <div class="partner-bento-grid">
-          ${cards}
-        </div>
-      `;
-    }
-
-    function movingCardsMarkup(reverse = false) {
-      const row = PARTNERS.concat(PARTNERS).map((partner) => `
-        <a href="${escapeHtml(partner.url)}" target="_blank" rel="noopener noreferrer" class="partner-moving-card">
-          <div class="partner-head">
-            ${logoMarkup(partner)}
-            <div>
-              <h3 class="partner-title">${escapeHtml(partner.name)}</h3>
-              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
-            </div>
-          </div>
-          <p class="partner-copy">${escapeHtml(partner.description)}</p>
-          <div class="partner-moving-card__foot" aria-hidden="true">
-            <span>Open</span>
-            ${externalIconSmall()}
-          </div>
-        </a>
-      `).join("");
-
-      return `
-        <div class="partner-marquee-shell">
-          <div class="partner-marquee-row${reverse ? " partner-marquee-row--reverse" : ""}">
-            ${row}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderMovingCards() {
-      partnerStage.innerHTML = `
-        <div style="display:grid; gap:1rem;">
-          ${movingCardsMarkup(false)}
-          ${movingCardsMarkup(true)}
-        </div>
-      `;
-    }
-
-    function pillMarkup(partner) {
-      return `
-        <button type="button" class="partner-pill-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
-          ${logoMarkup(partner)}
-          <span>${escapeHtml(partner.name)}</span>
-        </button>
-      `;
-    }
-
-    function initPillsMarqueeScrub(shell) {
-      if (!shell) {
-        return;
-      }
-      const row = shell.querySelector(".partner-pills-row");
-      if (!row) {
-        return;
-      }
-
-      const DURATION = 44000;
-
-      function wrapTime(ms) {
-        let t = ms % DURATION;
-        if (t < 0) {
-          t += DURATION;
-        }
-        return t;
-      }
-
-      const anim = row.animate(
-        [{ transform: "translateX(0)" }, { transform: "translateX(-50%)" }],
-        { duration: DURATION, iterations: Infinity, easing: "linear" }
-      );
-
-      let active = false;
-      let startX = 0;
-      let time0 = 0;
-      let dragMoved = false;
-      let blockNextClick = false;
-      let hoverPaused = false;
-
-      function travelPx() {
-        return Math.max(1, row.offsetWidth / 2);
-      }
-
-      function resumeIfAllowed() {
-        if (!active && !hoverPaused) {
-          anim.play();
-        }
-      }
-
-      shell.addEventListener("pointerdown", (e) => {
-        if (e.pointerType === "mouse" && e.button !== 0) {
-          return;
-        }
-        active = true;
-        dragMoved = false;
-        blockNextClick = false;
-        startX = e.clientX;
-        anim.pause();
-        time0 = wrapTime(anim.currentTime);
-        shell.classList.add("partner-pills-shell--grabbing");
-        shell.dataset.dragging = "0";
-        try {
-          shell.setPointerCapture(e.pointerId);
-        } catch (_) {}
-      });
-
-      shell.addEventListener("pointermove", (e) => {
-        if (!active) {
-          return;
-        }
-        const dx = e.clientX - startX;
-        if (Math.abs(dx) > 4) {
-          dragMoved = true;
-          shell.dataset.dragging = "1";
-        }
-        const tp = travelPx();
-        anim.currentTime = wrapTime(time0 - (dx / tp) * DURATION);
-      });
-
-      const endDrag = (e) => {
-        if (!active) {
-          return;
-        }
-        active = false;
-        shell.classList.remove("partner-pills-shell--grabbing");
-        shell.dataset.dragging = "0";
-        if (dragMoved) {
-          blockNextClick = true;
-        }
-        resumeIfAllowed();
-        try {
-          shell.releasePointerCapture(e.pointerId);
-        } catch (_) {}
       };
-
-      shell.addEventListener("pointerup", endDrag);
-      shell.addEventListener("pointercancel", endDrag);
-
-      shell.addEventListener(
-        "click",
-        (e) => {
-          if (!blockNextClick) {
-            return;
-          }
-          blockNextClick = false;
-          e.preventDefault();
-          e.stopPropagation();
-        },
-        true
-      );
-
-      shell.addEventListener("mouseenter", () => {
-        hoverPaused = true;
-        if (!active) {
-          anim.pause();
-        }
-      });
-
-      shell.addEventListener("mouseleave", () => {
-        hoverPaused = false;
-        resumeIfAllowed();
-      });
-
-      shell.addEventListener("focusin", () => {
-        hoverPaused = true;
-        if (!active) {
-          anim.pause();
-        }
-      });
-
-      shell.addEventListener("focusout", (e) => {
-        if (shell.contains(e.relatedTarget)) {
-          return;
-        }
-        hoverPaused = false;
-        resumeIfAllowed();
-      });
+      // Browsers only dispatch CSS animation events on rendered frames, so a
+      // hidden or throttled tab can leave the out-animation dangling forever.
+      // The timer (2x the 0.2s animation) guarantees the swap always lands.
+      const fallbackTimer = setTimeout(finalize, 400);
+      current.addEventListener("animationend", finalize, { once: true });
+      current.addEventListener("animationcancel", finalize, { once: true });
     }
 
-    function syncSpotlightMinHeight() {
-      if (!partnerStage || activeVariant !== "pills-spotlight") {
+    function setActivePartner(id) {
+      if (!id || id === activePartnerId || !panelFor(id)) {
         return;
       }
-
-      const measure = document.createElement("div");
-      measure.className = "partner-spotlight-measure";
-      measure.innerHTML = PARTNERS.map((partner) => spotlightContent(partner, "Partner focus", false)).join("");
-      partnerStage.appendChild(measure);
-
-      const maxHeight = Math.max(
-        320,
-        ...Array.from(measure.querySelectorAll(".partner-spotlight-panel")).map((panel) => panel.offsetHeight)
-      );
-      measure.remove();
-
-      if (maxHeight > 0) {
-        partnerStage.style.setProperty("--partner-spotlight-min-height", `${Math.ceil(maxHeight)}px`);
-      }
+      activePartnerId = id;
+      syncPills();
+      swapSpotlight();
     }
 
-    function renderPillsSpotlight() {
-      activePartnerId = partnerById("sarahs-home")?.id || PARTNERS[0].id;
-      const pills = PARTNERS.concat(PARTNERS).map((partner) => pillMarkup(partner)).join("");
-      partnerStage.innerHTML = `
-        <div class="partner-marquee-shell partner-pills-shell" id="partnerPillsScroll" aria-label="Partner pills — drag to move within the marquee">
-          <div class="partner-pills-row">
-            ${pills}
-          </div>
-        </div>
-        <div id="partnerSpotlightMount">
-          ${spotlightContent(partnerById(activePartnerId), "Partner focus", false)}
-        </div>
-      `;
-      syncSpotlightMinHeight();
-      initPillsMarqueeScrub(document.getElementById("partnerPillsScroll"));
+    function partnerIdFrom(event) {
+      const control = event.target instanceof Element ? event.target.closest("[data-partner-id]") : null;
+      return control ? control.dataset.partnerId : "";
     }
 
-    function renderDirectory() {
-      const activePartner = partnerById(activePartnerId);
-      partnerStage.innerHTML = `
-        <div class="partner-directory">
-          <div class="partner-directory-list">
-            ${PARTNERS.map((partner) => `
-              <button type="button" class="partner-directory-button${partner.id === activePartnerId ? " is-active" : ""}" data-partner-id="${escapeHtml(partner.id)}">
-                ${logoMarkup(partner)}
-                <div>
-                  <div class="partner-title">${escapeHtml(partner.name)}</div>
-                  <small>${escapeHtml(partner.tagline)}</small>
-                </div>
-              </button>
-            `).join("")}
-          </div>
-          <div id="partnerDirectoryFeature" class="partner-directory-feature">
-            ${directoryFeatureMarkup(activePartner)}
-          </div>
-        </div>
-      `;
-    }
-
-    function directoryFeatureMarkup(partner) {
-      return `
-        <article class="partner-feature-card">
-          <div class="partner-spotlight-meta">Selected partner</div>
-          <div class="partner-feature-grid">
-            ${logoMarkup(partner, "lg")}
-            <div>
-              <h3 class="partner-title" style="font-size:1.6rem;">${escapeHtml(partner.name)}</h3>
-              <p class="partner-spotlight-tagline">${escapeHtml(partner.tagline)}</p>
-              <p class="partner-copy" style="margin-top:1rem;">${escapeHtml(partner.description)}</p>
-              ${ctaMarkup(partner)}
-            </div>
-          </div>
-        </article>
-      `;
-    }
-
-    function renderActiveVariant() {
-      if (activeVariant === "accordion") {
-        renderAccordion();
-        return;
-      }
-      if (activeVariant === "bento") {
-        renderBento();
-        return;
-      }
-      if (activeVariant === "moving-cards") {
-        renderMovingCards();
-        return;
-      }
-      if (activeVariant === "pills-spotlight") {
-        renderPillsSpotlight();
-        return;
-      }
-      renderDirectory();
-    }
-
-    function syncVariantState() {
-      localStorage.setItem("ucount-partners-variant", activeVariant);
-      const url = new URL(window.location.href);
-      url.searchParams.set("partners", activeVariant);
-      history.replaceState({}, "", url);
-    }
-
-    function initVariantFromLocation() {
-      const url = new URL(window.location.href);
-      const urlVariant = url.searchParams.get("partners");
-      const allowed = new Set(PARTNER_VARIANTS.map((variant) => variant.id));
-      activeVariant = allowed.has(urlVariant) ? urlVariant : "pills-spotlight";
-    }
-
-    function renderPartnersLab() {
-      renderActiveVariant();
-    }
-
-    function refreshInteractiveVariant() {
-      if (activeVariant === "pills-spotlight") {
-        const spotlightMount = document.getElementById("partnerSpotlightMount");
-        if (spotlightMount) {
-          const oldPanel = spotlightMount.querySelector(".partner-spotlight-panel");
-          if (oldPanel) {
-            oldPanel.setAttribute("data-animate-out", "true");
-            oldPanel.addEventListener("animationend", () => {
-              spotlightMount.innerHTML = spotlightContent(partnerById(activePartnerId), "Partner focus", true);
-            }, { once: true });
-          } else {
-            spotlightMount.innerHTML = spotlightContent(partnerById(activePartnerId), "Partner focus", true);
-          }
-        }
-        partnerStage.querySelectorAll("[data-partner-id]").forEach((button) => {
-          button.classList.toggle("is-active", button.dataset.partnerId === activePartnerId);
-        });
-        return;
-      }
-
-      if (activeVariant === "directory") {
-        const featureMount = document.getElementById("partnerDirectoryFeature");
-        if (featureMount) {
-          const oldCard = featureMount.querySelector(".partner-feature-card");
-          if (oldCard) {
-            oldCard.style.animation = "partner-spotlight-out 0.2s ease-in both";
-            oldCard.addEventListener("animationend", () => {
-              featureMount.innerHTML = `<div style="animation: partner-spotlight-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both">${directoryFeatureMarkup(partnerById(activePartnerId))}</div>`;
-            }, { once: true });
-          } else {
-            featureMount.innerHTML = directoryFeatureMarkup(partnerById(activePartnerId));
-          }
-        }
-        partnerStage.querySelectorAll("[data-partner-id]").forEach((button) => {
-          button.classList.toggle("is-active", button.dataset.partnerId === activePartnerId);
-        });
-      }
-    }
-
-    if (partnerSwitch) {
-      partnerSwitch.addEventListener("click", (event) => {
-        const button = event.target.closest("[data-variant]");
-        if (!button) {
-          return;
-        }
-
-        activeVariant = button.dataset.variant;
-        syncVariantState();
-        renderPartnersLab();
-      });
-    }
-
-    partnerStage.addEventListener("click", (event) => {
-      const control = event.target.closest("[data-partner-id]");
-      if (!control) {
-        return;
-      }
-
-      activePartnerId = control.dataset.partnerId;
-      if (activeVariant === "pills-spotlight" || activeVariant === "directory") {
-        refreshInteractiveVariant();
-      }
+    stage.addEventListener("click", (event) => {
+      setActivePartner(partnerIdFrom(event));
     });
 
-    partnerStage.addEventListener("mouseover", (event) => {
-      if (activeVariant !== "pills-spotlight") {
-        return;
-      }
-
+    stage.addEventListener("mouseover", (event) => {
       const shell = document.getElementById("partnerPillsScroll");
       if (shell && shell.dataset.dragging === "1") {
         return;
       }
-
-      const control = event.target.closest("[data-partner-id]");
-      if (!control) {
-        return;
-      }
-
-      if (control.dataset.partnerId === activePartnerId) {
-        return;
-      }
-
-      activePartnerId = control.dataset.partnerId;
-      refreshInteractiveVariant();
+      setActivePartner(partnerIdFrom(event));
     });
 
-    partnerStage.addEventListener("focusin", (event) => {
-      const control = event.target.closest("[data-partner-id]");
-      if (!control) {
-        return;
-      }
-
-      if (control.dataset.partnerId === activePartnerId) {
-        return;
-      }
-
-      activePartnerId = control.dataset.partnerId;
-      if (activeVariant === "pills-spotlight" || activeVariant === "directory") {
-        refreshInteractiveVariant();
-      }
+    stage.addEventListener("focusin", (event) => {
+      setActivePartner(partnerIdFrom(event));
     });
 
-    // This script is inline, so Astro re-executes it every time the visitor
-    // navigates back to the home page. window survives those navigations, so
-    // without this guard each return trip would add another resize listener
-    // on top of the last. Register once and let it call through to whichever
-    // handlers the current page defined.
-    let accordionWmResizeTimer;
-    window.__ucountPartnerResize = () => {
-      clearTimeout(accordionWmResizeTimer);
-      accordionWmResizeTimer = setTimeout(() => {
-        syncAccordionWatermarkVisibility();
-        syncSpotlightMinHeight();
-      }, 120);
-    };
+    initPillsMarqueeScrub(document.getElementById("partnerPillsScroll"));
+  }
 
-    if (!window.__ucountPartnerResizeBound) {
-      window.__ucountPartnerResizeBound = true;
-      window.addEventListener("resize", () => {
-        window.__ucountPartnerResize?.();
-      });
+  function initPillsMarqueeScrub(shell) {
+    if (!shell) {
+      return;
+    }
+    const row = shell.querySelector(".partner-pills-row");
+    if (!row) {
+      return;
     }
 
-    activeVariant = "pills-spotlight";
-    renderPartnersLab();
-    })();
-  </script>
+    const DURATION = 44000;
+
+    function wrapTime(ms) {
+      let t = ms % DURATION;
+      if (t < 0) {
+        t += DURATION;
+      }
+      return t;
+    }
+
+    const anim = row.animate(
+      [{ transform: "translateX(0)" }, { transform: "translateX(-50%)" }],
+      { duration: DURATION, iterations: Infinity, easing: "linear" }
+    );
+
+    let active = false;
+    let startX = 0;
+    let time0 = 0;
+    let dragMoved = false;
+    let blockNextClick = false;
+    let hoverPaused = false;
+
+    function travelPx() {
+      return Math.max(1, row.offsetWidth / 2);
+    }
+
+    function resumeIfAllowed() {
+      if (!active && !hoverPaused) {
+        anim.play();
+      }
+    }
+
+    shell.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) {
+        return;
+      }
+      active = true;
+      dragMoved = false;
+      blockNextClick = false;
+      startX = e.clientX;
+      anim.pause();
+      time0 = wrapTime(anim.currentTime);
+      shell.classList.add("partner-pills-shell--grabbing");
+      shell.dataset.dragging = "0";
+      try {
+        shell.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    });
+
+    shell.addEventListener("pointermove", (e) => {
+      if (!active) {
+        return;
+      }
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) {
+        dragMoved = true;
+        shell.dataset.dragging = "1";
+      }
+      const tp = travelPx();
+      anim.currentTime = wrapTime(time0 - (dx / tp) * DURATION);
+    });
+
+    const endDrag = (e) => {
+      if (!active) {
+        return;
+      }
+      active = false;
+      shell.classList.remove("partner-pills-shell--grabbing");
+      shell.dataset.dragging = "0";
+      if (dragMoved) {
+        blockNextClick = true;
+      }
+      resumeIfAllowed();
+      try {
+        shell.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+    };
+
+    shell.addEventListener("pointerup", endDrag);
+    shell.addEventListener("pointercancel", endDrag);
+
+    shell.addEventListener(
+      "click",
+      (e) => {
+        if (!blockNextClick) {
+          return;
+        }
+        blockNextClick = false;
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      true
+    );
+
+    shell.addEventListener("mouseenter", () => {
+      hoverPaused = true;
+      if (!active) {
+        anim.pause();
+      }
+    });
+
+    shell.addEventListener("mouseleave", () => {
+      hoverPaused = false;
+      resumeIfAllowed();
+    });
+
+    shell.addEventListener("focusin", () => {
+      hoverPaused = true;
+      if (!active) {
+        anim.pause();
+      }
+    });
+
+    shell.addEventListener("focusout", (e) => {
+      if (shell.contains(e.relatedTarget)) {
+        return;
+      }
+      hoverPaused = false;
+      resumeIfAllowed();
+    });
+  }
+
+  initPartners();
+  document.addEventListener("astro:page-load", initPartners);
+</script>
 </BaseLayout>
