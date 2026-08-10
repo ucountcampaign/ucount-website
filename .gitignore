@@ -35,3 +35,6 @@ pnpm-debug.log*
 
 # private org documents (tax certificates, licenses) — never publish
 docs/*.pdf
+
+# local Claude Code worktrees / agent state
+.claude/
