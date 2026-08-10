@@ -20,9 +20,12 @@ Set separate server-only API keys for each Wix surface:
 - `WIX_STORES_API_KEY` for store catalog reads and eCommerce checkout creation.
 - `WIX_FORMS_API_KEY` for Wix Forms submissions.
 
-If Wix returns checkout URLs on the same domain as the Astro deployment, set
-`WIX_CHECKOUT_BASE_URL` to the separate Wix-managed checkout domain so `/checkout`
-does not get handled by Astro.
+Wix returns checkout URLs on the primary site domain. This repo defaults
+`WIX_CHECKOUT_BASE_URL` to `https://checkout.ucountcampaign.org` so those
+URLs are rewritten onto the Wix-connected checkout subdomain and `/checkout`
+is not handled by Astro. Override the env var only for staging or alternate
+hosts. That subdomain must stay DNS-only to `pointing.wixdns.net` and be
+verified in Wix before HTTPS checkout works.
 
 To submit the Astro contact form into Wix Forms, set `WIX_CONTACT_FORM_ID`. The
 forms key needs the Wix Forms "Manage Form Submissions" permission. This site
@@ -114,7 +117,7 @@ canonical domain to Astro, validate these paths and flows:
 - `/shop` serves the Astro marketplace, not the legacy Wix editor page.
 - `/product-page/<slug>` serves the Astro product detail page for several Wix products.
 - `/contact-us-1` redirects to `/contact`.
-- `/checkout` stays routed to Wix checkout, or `WIX_CHECKOUT_BASE_URL` rewrites checkout URLs to a Wix-managed checkout host.
+- Checkout redirects to `https://checkout.ucountcampaign.org/checkout?...` (Wix subdomain), not Astro's primary domain.
 - The checkout "Continue Browsing" link returns shoppers to the Astro marketplace.
 - A product with options creates checkout with the selected variant and quantity.
 - Out-of-stock products and out-of-stock variants cannot start checkout.
