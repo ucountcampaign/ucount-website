@@ -14,10 +14,11 @@ interface ImportMetaEnv {
   readonly WIX_SITE_ID?: string;
   readonly WIX_EVENTS_API_KEY?: string;
   readonly WIX_DATA_API_KEY?: string;
-  readonly WIX_STORES_API_KEY?: string;
   readonly WIX_FORMS_API_KEY?: string;
-  readonly WIX_CHECKOUT_BASE_URL?: string;
   readonly WIX_CMS_COLLECTION_ALIASES?: string;
+  readonly SQUARE_ACCESS_TOKEN?: string;
+  readonly SQUARE_LOCATION_ID?: string;
+  readonly SQUARE_ENVIRONMENT?: string;
   readonly WIX_CONTACT_FORM_ID?: string;
   readonly WIX_CONTACT_FIELD_FIRST_NAME?: string;
   readonly WIX_CONTACT_FIELD_LAST_NAME?: string;
