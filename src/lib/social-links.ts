@@ -9,7 +9,7 @@ export type SocialLink = {
 };
 
 export function getSocialLinks(site: ResolvedSiteSettings): SocialLink[] {
-  return [
+  const links: SocialLink[] = [
     {
       label: "Facebook",
       href: site.facebookUrl,
@@ -20,5 +20,7 @@ export function getSocialLinks(site: ResolvedSiteSettings): SocialLink[] {
       href: site.instagramUrl,
       icon: "instagram",
     },
-  ].filter((link) => link.href.trim());
+  ];
+
+  return links.filter((link) => link.href.trim());
 }

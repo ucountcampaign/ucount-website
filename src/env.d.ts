@@ -1,5 +1,12 @@
 /// <reference types="astro/client" />
 
+// Cloudflare's virtual module for runtime bindings and secrets. Only `env` is
+// used (read via getEnv in src/lib/runtime-env.ts), so declare just that
+// instead of committing wrangler's generated runtime types.
+declare module "cloudflare:workers" {
+  export const env: Record<string, unknown>;
+}
+
 interface ImportMetaEnv {
   readonly PUBLIC_SITE_URL?: string;
   readonly SITE_URL?: string;

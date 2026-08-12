@@ -17,6 +17,7 @@ import {
   truncateDescription,
 } from "../lib/seo";
 import { setPublicCacheControl } from "../lib/cache";
+import { createWixImageSrcSet, resizeWixImageUrl } from "../lib/images";
 
 const [
   siteSettings,
@@ -134,13 +135,26 @@ const values = (valuesResult.length ? valuesResult : defaultValues)
   }))
   .filter((value) => value.title);
 
-const teamMembers = teamMembersResult.map((member) => ({
-  name: cmsText(member.name, ""),
-  role: cmsText(member.role, ""),
-  headshot: cmsImageUrl(member.headshot, ""),
-  shortBio: cmsText(member.shortBio, ""),
-  longBio: cmsText(member.longBio, cmsText(member.shortBio, "")),
-}));
+// One ladder drives both the srcset candidates and the fallback src (the
+// middle entry), so the two cannot drift apart.
+const headshotSizes = [
+  { width: 480, height: 960 },
+  { width: 800, height: 1600 },
+  { width: 1200, height: 2400 },
+];
+
+const teamMembers = teamMembersResult.map((member) => {
+  const headshot = cmsImageUrl(member.headshot, "");
+
+  return {
+    name: cmsText(member.name, ""),
+    role: cmsText(member.role, ""),
+    headshot: resizeWixImageUrl(headshot, { ...headshotSizes[1], mode: "fit" }),
+    headshotSrcSet: createWixImageSrcSet(headshot, headshotSizes, "fit"),
+    shortBio: cmsText(member.shortBio, ""),
+    longBio: cmsText(member.longBio, cmsText(member.shortBio, "")),
+  };
+});
 
 const accentClass = (token: string) =>
   ({
@@ -237,7 +251,16 @@ const aboutDescription = truncateDescription(hero.body);
       <div class="grid grid-cols-1 items-start gap-8 sm:grid-cols-2 lg:grid-cols-3">
         {teamMembers.map((member, index) => (
           <div class="group bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md" data-team-card data-bio-open="false">
-            <img src={member.headshot} alt={member.name} class="h-72 w-full object-cover object-top" loading="lazy" decoding="async">
+            <!-- Keep below-the-fold portraits lazy so they do not compete with the initial render. -->
+            <img
+              src={member.headshot || undefined}
+              srcset={member.headshotSrcSet || undefined}
+              sizes="(min-width: 1280px) 384px, (min-width: 1024px) calc((100vw - 8rem) / 3), (min-width: 640px) calc((100vw - 5rem) / 2), calc(100vw - 3rem)"
+              alt={member.name}
+              class="h-72 w-full object-cover object-top"
+              loading="lazy"
+              decoding="async"
+            >
             <div class="p-6">
               <h3 class="font-display font-bold text-lg text-neutral-900">{member.name}</h3>
               <p class="text-ember-brand font-semibold text-sm mb-3">{member.role}</p>

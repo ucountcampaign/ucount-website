@@ -110,15 +110,39 @@ export function resizeWixImageUrl(
         ? `fill/w_${width},h_${height},al_c,q_${quality},enc_auto`
         : `fit/w_${width},h_${height},q_${quality},enc_auto`;
 
-    if (/\/v1\/[^?]+\/file\.[^/?#]+$/i.test(parsedUrl.pathname)) {
-      parsedUrl.pathname = parsedUrl.pathname.replace(
-        /\/v1\/[^?]+\/(file\.[^/?#]+)$/i,
-        `/v1/${transform}/$1`,
-      );
+    // The transform chain is delimited by the last /v1/ segment; earlier ones
+    // can belong to the media path itself.
+    const existingTransformIndex = parsedUrl.pathname.lastIndexOf("/v1/");
+
+    if (existingTransformIndex !== -1) {
+      const sourcePath = parsedUrl.pathname.slice(0, existingTransformIndex);
+      const existingSegments = parsedUrl.pathname
+        .slice(existingTransformIndex + "/v1/".length)
+        .split("/");
+      const lastSegment = existingSegments.at(-1) ?? "";
+      const outputFilename = /\.[a-z0-9]{2,5}$/i.test(lastSegment)
+        ? lastSegment
+        : "file.jpg";
+
+      // CMS image URLs can include an editor-selected crop before their Wix
+      // resize operation (always the first operation after /v1/). Keep that
+      // crop while replacing only the output size.
+      const cropParams =
+        existingSegments[0] === "crop" && existingSegments.length > 2
+          ? existingSegments[1]
+          : "";
+      const crop = cropParams ? `crop/${cropParams}/` : "";
+
+      parsedUrl.pathname = `${sourcePath}/v1/${crop}${transform}/${outputFilename}`;
       return parsedUrl.toString();
     }
 
-    parsedUrl.pathname = `${parsedUrl.pathname.replace(/\/+$/, "")}/v1/${transform}/file.jpg`;
+    // Keep the source extension so formats with transparency (PNG) are not
+    // flattened by a .jpg fallback when enc_auto negotiation is unavailable.
+    const sourceExtension =
+      parsedUrl.pathname.match(/\.(jpe?g|png|gif|webp|avif)$/i)?.[1] ?? "jpg";
+
+    parsedUrl.pathname = `${parsedUrl.pathname.replace(/\/+$/, "")}/v1/${transform}/file.${sourceExtension.toLowerCase()}`;
 
     return parsedUrl.toString();
   } catch {
@@ -132,6 +156,13 @@ export function createWixImageSrcSet(
   mode: "fit" | "fill" = "fit",
 ): string {
   return sizes
-    .map((size) => `${resizeWixImageUrl(url, { ...size, mode })} ${size.width}w`)
+    .map((size) => {
+      const resized = resizeWixImageUrl(url, { ...size, mode });
+
+      // A missing image resolves to ""; skip it so the srcset does not emit
+      // bare "480w" candidates that browsers parse as relative URLs.
+      return resized ? `${resized} ${size.width}w` : "";
+    })
+    .filter(Boolean)
     .join(", ");
 }
