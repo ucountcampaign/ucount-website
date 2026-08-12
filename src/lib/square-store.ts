@@ -67,6 +67,8 @@ type SquareItemData = {
   description_html?: string | null;
   description_plaintext?: string | null;
   is_archived?: boolean;
+  product_type?: string;
+  ecom_visibility?: string;
   image_ids?: string[];
   categories?: Array<{ id?: string }>;
   item_options?: Array<{ item_option_id?: string }>;
@@ -419,8 +421,17 @@ function getProductImages(
   name: string,
 ): StoreProductImage[] {
   const images: StoreProductImage[] = [];
+  const imageIds = [
+    ...(item.item_data?.image_ids ?? []),
+    // Variation-level images join the gallery so the product page can link
+    // gallery thumbnails to their variants (and so items whose only images
+    // live on variations still qualify for the storefront).
+    ...(item.item_data?.variations ?? []).flatMap(
+      (variation) => variation.item_variation_data?.image_ids ?? [],
+    ),
+  ];
 
-  for (const imageId of item.item_data?.image_ids ?? []) {
+  for (const imageId of imageIds) {
     const image = mapImage(imageId, context, name);
 
     if (image && !images.some((existing) => existing.url === image.url)) {
@@ -547,6 +558,15 @@ function mapVariants(
         return null;
       }
 
+      const priceMoney = getVariationPriceMoney(variation, context.locationId);
+
+      // Variations without a fixed price (Square variable pricing) cannot be
+      // sold through a Payment Link, which has no way to ask for a sale-time
+      // price, so they never reach the storefront.
+      if (typeof priceMoney?.amount !== "number") {
+        return null;
+      }
+
       const stock = getVariationStock(variation, context);
       const choices = getVariantChoices(variation, optionValueNames);
       const data = variation.item_variation_data;
@@ -556,9 +576,7 @@ function mapVariants(
         id,
         label: getVariantLabel(variation, choices, name),
         choices,
-        price:
-          formatMoney(getVariationPriceMoney(variation, context.locationId)) ||
-          fallbackPrice,
+        price: formatMoney(priceMoney) || fallbackPrice,
         sku: data?.sku?.trim() ?? "",
         inStock: stock.inStock,
         visible: data?.sellable !== false,
@@ -888,14 +906,35 @@ function assignSlugs(
   return slugsByItemId;
 }
 
+// Catalog item types that never belong on the goods storefront.
+const excludedProductTypes = new Set([
+  "GIFT_CARD",
+  "APPOINTMENTS_SERVICE",
+  "LEGACY_SQUARE_ONLINE_SERVICE",
+  "LEGACY_SQUARE_ONLINE_MEMBERSHIP",
+]);
+
+// Square Online visibility states that mean "do not show". Items without the
+// field (sellers not using Square Online) stay visible.
+const hiddenEcomVisibilities = new Set(["HIDDEN", "UNAVAILABLE"]);
+
+function isStorefrontItem(item: SquareCatalogObject, locationId: string): boolean {
+  const data = item.item_data;
+
+  return Boolean(
+    !item.is_deleted &&
+      data &&
+      data.is_archived !== true &&
+      !excludedProductTypes.has(data.product_type ?? "") &&
+      !hiddenEcomVisibilities.has(data.ecom_visibility ?? "") &&
+      isPresentAtLocation(item, locationId),
+  );
+}
+
 async function loadCatalog(config: SquareConfig): Promise<SquareCatalog> {
   const { items, relatedById } = await fetchCatalogObjects(config);
-  const availableItems = items.filter(
-    (item) =>
-      !item.is_deleted &&
-      item.item_data &&
-      item.item_data.is_archived !== true &&
-      isPresentAtLocation(item, config.locationId),
+  const availableItems = items.filter((item) =>
+    isStorefrontItem(item, config.locationId),
   );
   const inventoryByVariationId = await fetchInventoryCounts(
     config,
@@ -984,8 +1023,8 @@ function toCard(product: StoreProductDetail): StoreProductCard {
 }
 
 function featuredProductSort(a: StoreProductCard, b: StoreProductCard): number {
-  const aNew = /new/i.test(a.ribbon);
-  const bNew = /new/i.test(b.ribbon);
+  const aNew = /new|featured/i.test(a.ribbon);
+  const bNew = /new|featured/i.test(b.ribbon);
 
   if (aNew !== bNew) {
     return aNew ? -1 : 1;
@@ -1115,6 +1154,10 @@ async function buildCheckoutLineItem(item: CheckoutLineItemInput) {
 
   const variant = resolveCheckoutVariant(product, item.variantId);
 
+  if (variant.quantity !== null && item.quantity > variant.quantity) {
+    throw new Error("The requested quantity is not available.");
+  }
+
   return {
     catalog_object_id: variant.id,
     quantity: String(item.quantity),
@@ -1150,6 +1193,17 @@ export async function createCheckoutUrlForCart(
       order: {
         location_id: config.locationId,
         line_items: lineItems,
+        // Apply the location's catalog tax and discount rules; Payment Link
+        // orders skip them unless asked.
+        pricing_options: {
+          auto_apply_taxes: true,
+          auto_apply_discounts: true,
+        },
+      },
+      checkout_options: {
+        // Physical goods need a delivery address; Square's hosted checkout
+        // omits the address fields by default.
+        ask_for_shipping_address: true,
       },
     },
   );

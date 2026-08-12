@@ -33,8 +33,11 @@ The shop degrades gracefully when the Square credentials are missing: pages
 render with an empty product grid and checkout returns to the shop with an
 error banner.
 
-Products need a name and at least one image in Square before they appear on
-the site. A Square category named `New` or `Featured` shows as the card badge
+Products need a name, at least one image (on the item or a variation), and a
+fixed price before they appear on the site; variable-price variations are
+skipped because hosted checkout cannot ask for a sale-time price. Gift cards,
+appointment services, archived items, and items hidden from Square Online do
+not appear. A Square category named `New` or `Featured` shows as the card badge
 and pins those products first in the featured section. Checkout happens on the
 Square-hosted payment page (`checkout.square.site`).
 
