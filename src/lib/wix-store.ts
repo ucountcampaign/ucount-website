@@ -508,7 +508,7 @@ function getVariantPrice(variant: WixProductVariant, fallback: string): string {
 
 function mapOptions(product: WixStoreProduct, name: string): StoreProductOption[] {
   return (product.productOptions ?? [])
-    .map((option) => {
+    .map((option): StoreProductOption | null => {
       const optionName = option.name?.trim();
 
       if (!optionName) {
@@ -519,7 +519,7 @@ function mapOptions(product: WixStoreProduct, name: string): StoreProductOption[
         name: optionName,
         type: option.optionType ?? "drop_down",
         choices: (option.choices ?? [])
-          .map((choice) => {
+          .map((choice): StoreProductOptionChoice | null => {
             const label = getChoiceLabel(choice);
 
             if (!label) {
@@ -550,7 +550,7 @@ function mapVariants(
   fallbackPrice: string,
 ): StoreProductVariant[] {
   return (product.variants ?? [])
-    .map((variant) => {
+    .map((variant): StoreProductVariant | null => {
       const id = variant._id?.trim();
 
       if (!id) {
@@ -679,7 +679,7 @@ function mapProductCard(
 }
 
 function mapCollection(collection: {
-  _id?: string;
+  _id?: string | null;
   name?: string | null;
   slug?: string | null;
   visible?: boolean | null;
@@ -886,7 +886,7 @@ async function wixApiRequest<T>(path: string, body?: unknown): Promise<T> {
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await response.text();
-  const data = text ? (JSON.parse(text) as T & { message?: string }) : ({} as T);
+  const data = (text ? JSON.parse(text) : {}) as T & { message?: string };
 
   if (!response.ok) {
     throw new Error(
