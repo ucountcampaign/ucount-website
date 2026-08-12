@@ -99,6 +99,23 @@ const jsonLd = [
   */}
   <link rel="preconnect" href="https://static.wixstatic.com" />
   <ClientRouter />
+  <script>
+    // Firefox does not start resource loads for <img> elements that
+    // ClientRouter adopts from its inert DOMParser document; their requests
+    // die as NS_BINDING_ABORTED and the images stay blank until a full
+    // reload. Re-create each image after the swap so the live document owns
+    // the load - the same approach Astro uses for <video>/<audio>
+    // (withastro/astro#17603). after-swap fires before the new page paints,
+    // so replacing images here is not visible. Images the browser already
+    // has (complete with real dimensions) are left alone.
+    document.addEventListener("astro:after-swap", () => {
+      for (const img of document.querySelectorAll("img")) {
+        if (!(img.complete && img.naturalWidth > 0)) {
+          img.replaceWith(img.cloneNode(true));
+        }
+      }
+    });
+  </script>
   {jsonLd.map((schema) => (
     <script type="application/ld+json" set:html={safeJsonLd(schema)} />
   ))}
