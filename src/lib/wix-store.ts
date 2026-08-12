@@ -1,6 +1,7 @@
 import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import { collections, products } from "@wix/stores";
 import { siteCacheTtlMs } from "./cache";
+import { createWixImageSrcSet, resizeWixImageUrl } from "./images";
 import { getEnv } from "./runtime-env";
 
 const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
@@ -302,56 +303,6 @@ function truncateText(value: string, maxLength: number): string {
   const trimmedAtWord = clipped.replace(/\s+\S*$/, "").trim();
 
   return `${trimmedAtWord || clipped}...`;
-}
-
-function resizeWixImageUrl(
-  url: string,
-  {
-    width,
-    height,
-    mode = "fit",
-    quality = 82,
-  }: {
-    width: number;
-    height: number;
-    mode?: "fit" | "fill";
-    quality?: number;
-  },
-): string {
-  try {
-    const parsedUrl = new URL(url);
-
-    if (!parsedUrl.hostname.endsWith("wixstatic.com")) {
-      return url;
-    }
-
-    const transform =
-      mode === "fill"
-        ? `fill/w_${width},h_${height},al_c,q_${quality},enc_auto`
-        : `fit/w_${width},h_${height},q_${quality},enc_auto`;
-
-    parsedUrl.pathname = parsedUrl.pathname.replace(
-      /\/v1\/[^?]+\/(file\.[^/?#]+)$/i,
-      `/v1/${transform}/$1`,
-    );
-
-    return parsedUrl.toString();
-  } catch {
-    return url;
-  }
-}
-
-function createWixImageSrcSet(
-  url: string,
-  sizes: Array<{ width: number; height: number }>,
-  mode: "fit" | "fill",
-): string {
-  return sizes
-    .map(
-      (size) =>
-        `${resizeWixImageUrl(url, { ...size, mode })} ${size.width}w`,
-    )
-    .join(", ");
 }
 
 function formatFallbackPrice(priceData: WixPriceData): string {

@@ -93,6 +93,11 @@ const jsonLd = [
   */}
   <link rel="preload" href="/assets/fonts/satoshi-400.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/assets/fonts/clash-display-700.woff2" as="font" type="font/woff2" crossorigin />
+  {/*
+    Every page pulls CMS imagery (heroes, products, portraits) from Wix's CDN,
+    so warm the connection once here instead of per page.
+  */}
+  <link rel="preconnect" href="https://static.wixstatic.com" />
   <ClientRouter />
   {jsonLd.map((schema) => (
     <script type="application/ld+json" set:html={safeJsonLd(schema)} />

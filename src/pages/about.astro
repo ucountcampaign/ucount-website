@@ -135,26 +135,22 @@ const values = (valuesResult.length ? valuesResult : defaultValues)
   }))
   .filter((value) => value.title);
 
+// One ladder drives both the srcset candidates and the fallback src (the
+// middle entry), so the two cannot drift apart.
+const headshotSizes = [
+  { width: 480, height: 960 },
+  { width: 800, height: 1600 },
+  { width: 1200, height: 2400 },
+];
+
 const teamMembers = teamMembersResult.map((member) => {
   const headshot = cmsImageUrl(member.headshot, "");
 
   return {
     name: cmsText(member.name, ""),
     role: cmsText(member.role, ""),
-    headshot: resizeWixImageUrl(headshot, {
-      width: 800,
-      height: 1600,
-      mode: "fit",
-    }),
-    headshotSrcSet: createWixImageSrcSet(
-      headshot,
-      [
-        { width: 480, height: 960 },
-        { width: 800, height: 1600 },
-        { width: 1200, height: 2400 },
-      ],
-      "fit",
-    ),
+    headshot: resizeWixImageUrl(headshot, { ...headshotSizes[1], mode: "fit" }),
+    headshotSrcSet: createWixImageSrcSet(headshot, headshotSizes, "fit"),
     shortBio: cmsText(member.shortBio, ""),
     longBio: cmsText(member.longBio, cmsText(member.shortBio, "")),
   };
@@ -197,8 +193,6 @@ const aboutDescription = truncateDescription(hero.body);
     ], siteUrl),
   ]}
 >
-  <link slot="head" rel="preconnect" href="https://static.wixstatic.com" />
-
   <!-- PAGE HERO -->
   <section class="relative bg-ember-50/40 pt-28 pb-16 lg:pt-36 lg:pb-20">
     <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center">
@@ -259,13 +253,11 @@ const aboutDescription = truncateDescription(hero.body);
           <div class="group bg-white rounded-2xl border border-neutral-200 shadow-sm overflow-hidden transition-shadow hover:shadow-md" data-team-card data-bio-open="false">
             <!-- Keep below-the-fold portraits lazy so they do not compete with the initial render. -->
             <img
-              src={member.headshot}
-              srcset={member.headshotSrcSet}
+              src={member.headshot || undefined}
+              srcset={member.headshotSrcSet || undefined}
               sizes="(min-width: 1280px) 384px, (min-width: 1024px) calc((100vw - 8rem) / 3), (min-width: 640px) calc((100vw - 5rem) / 2), calc(100vw - 3rem)"
               alt={member.name}
               class="h-72 w-full object-cover object-top"
-              width="800"
-              height="576"
               loading="lazy"
               decoding="async"
             >
