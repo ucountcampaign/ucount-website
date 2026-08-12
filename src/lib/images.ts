@@ -110,11 +110,23 @@ export function resizeWixImageUrl(
         ? `fill/w_${width},h_${height},al_c,q_${quality},enc_auto`
         : `fit/w_${width},h_${height},q_${quality},enc_auto`;
 
-    if (/\/v1\/[^?]+\/file\.[^/?#]+$/i.test(parsedUrl.pathname)) {
-      parsedUrl.pathname = parsedUrl.pathname.replace(
-        /\/v1\/[^?]+\/(file\.[^/?#]+)$/i,
-        `/v1/${transform}/$1`,
-      );
+    const existingTransformIndex = parsedUrl.pathname.indexOf("/v1/");
+
+    if (existingTransformIndex !== -1) {
+      const sourcePath = parsedUrl.pathname.slice(0, existingTransformIndex);
+      const existingSegments = parsedUrl.pathname
+        .slice(existingTransformIndex + "/v1/".length)
+        .split("/");
+      const outputFilename = existingSegments.at(-1) || "file.jpg";
+      const cropIndex = existingSegments.indexOf("crop");
+      const crop =
+        cropIndex !== -1 && existingSegments[cropIndex + 1]
+          ? `crop/${existingSegments[cropIndex + 1]}/`
+          : "";
+
+      // CMS image URLs can include an editor-selected crop before their Wix
+      // resize operation. Keep that crop while replacing only the output size.
+      parsedUrl.pathname = `${sourcePath}/v1/${crop}${transform}/${outputFilename}`;
       return parsedUrl.toString();
     }
 
