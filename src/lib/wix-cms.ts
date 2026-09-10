@@ -41,6 +41,7 @@ export type SiteSettings = {
   ein?: string | null;
   facebookUrl?: string | null;
   instagramUrl?: string | null;
+  newsletterSignupUrl?: string | null;
   logoDark?: string | null;
   logoLight?: string | null;
   organizationSummary?: string | null;
@@ -108,6 +109,7 @@ export type ResolvedSiteSettings = {
   ein: string;
   facebookUrl: string;
   instagramUrl: string;
+  newsletterSignupUrl: string;
   organizationSummary: string;
 };
 
@@ -122,6 +124,8 @@ export const defaultSiteSettings: ResolvedSiteSettings = {
   ein: "84-0470239",
   facebookUrl: "https://www.facebook.com/UCOUNTCampaign",
   instagramUrl: "https://www.instagram.com/ucountcampaign",
+  newsletterSignupUrl:
+    "https://timberlinechurch.ccbchurch.com/goto/forms/3518/responses/new",
   organizationSummary:
     "With hope, courage, compassion, and vision, we fight trafficking through prevention, awareness, and restoration so every person is met with dignity and justice.",
 };
@@ -150,6 +154,10 @@ export function resolveSiteSettings(
     instagramUrl: cmsText(
       settings?.instagramUrl,
       defaultSiteSettings.instagramUrl,
+    ),
+    newsletterSignupUrl: cmsText(
+      settings?.newsletterSignupUrl,
+      defaultSiteSettings.newsletterSignupUrl,
     ),
     organizationSummary: cmsText(
       settings?.organizationSummary,

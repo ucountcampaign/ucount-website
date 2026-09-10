@@ -156,6 +156,7 @@ function postalAddress(site: ResolvedSiteSettings) {
 }
 
 export function organizationSchema(site: ResolvedSiteSettings, siteUrl = SITE_URL) {
+  // Intentional: the newsletter signup form is not an organization profile, so it stays out of sameAs.
   const sameAs = [site.facebookUrl, site.instagramUrl].filter(Boolean);
 
   return {

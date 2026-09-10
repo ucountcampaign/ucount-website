@@ -89,13 +89,24 @@ const contactDescription = truncateDescription(hero.body);
           </div>
 
           <!-- Address -->
-          <div class="flex items-start gap-4 mb-8">
+          <div class="flex items-start gap-4 mb-6">
             <div class="w-10 h-10 rounded-full bg-ember-50 flex items-center justify-center flex-shrink-0 mt-0.5">
               <svg class="w-5 h-5 text-ember-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             </div>
             <div>
               <p class="text-sm font-semibold text-neutral-700 mb-1">Address</p>
               <p class="text-sm text-neutral-600 leading-relaxed">{site.streetAddress}<br/>{site.cityStateZip}</p>
+            </div>
+          </div>
+
+          <!-- Newsletter -->
+          <div class="flex items-start gap-4 mb-8">
+            <div class="w-10 h-10 rounded-full bg-ember-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg class="w-5 h-5 text-ember-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 11h6M7 8h2"/></svg>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-neutral-700 mb-1">Newsletter</p>
+              <a href={site.newsletterSignupUrl} target="_blank" rel="noopener noreferrer" class="text-sm text-ember-brand hover:text-ember-600 transition-colors">Sign up for our newsletter</a>
             </div>
           </div>
 

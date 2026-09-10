@@ -43,6 +43,7 @@ export const GET: APIRoute = async ({ url }) => {
 - Donate: ${site.primaryDonateUrl}
 - Facebook: ${site.facebookUrl}
 - Instagram: ${site.instagramUrl}
+- Newsletter signup: ${site.newsletterSignupUrl}
 
 ## Mission
 U COUNT fights global and local sex trafficking through prevention, awareness, and restoration. The organization emphasizes hope, courage, compassion, dignity, justice, collaboration, community, perseverance, and vision.
