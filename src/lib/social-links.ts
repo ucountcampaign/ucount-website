@@ -8,6 +8,8 @@ export type SocialLink = {
   icon: SocialLinkName;
 };
 
+// Builds the icon row shown in the footer and contact card. The newsletter
+// signup form sits alongside the social profiles at the client's request.
 export function getSocialLinks(site: ResolvedSiteSettings): SocialLink[] {
   const links: SocialLink[] = [
     {
@@ -19,6 +21,11 @@ export function getSocialLinks(site: ResolvedSiteSettings): SocialLink[] {
       label: "Instagram",
       href: site.instagramUrl,
       icon: "instagram",
+    },
+    {
+      label: "Newsletter signup",
+      href: site.newsletterSignupUrl,
+      icon: "mail",
     },
   ];
 

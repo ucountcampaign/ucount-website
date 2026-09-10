@@ -51,6 +51,7 @@ const homeHref = (hash: string) => (activePage === "home" ? hash : `/${hash}`);
         <h3 class="font-display font-bold text-sm uppercase tracking-wider text-neutral-400 mb-4">Contact</h3>
         <ul class="space-y-2.5">
           <li><a href={`mailto:${site.mainEmail}`} class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">{site.mainEmail}</a></li>
+          <li><a href={site.newsletterSignupUrl} target="_blank" rel="noopener noreferrer" class="text-sm text-neutral-400 hover:text-ember-brand transition-colors">Sign up for our newsletter</a></li>
         </ul>
       </div>
     </div>
