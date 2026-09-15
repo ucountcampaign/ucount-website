@@ -17,7 +17,6 @@
     "@astrojs/cloudflare": "13.7.0",
     "@tailwindcss/vite": "^4.3.0",
     "@wix/sdk": "^1.21.5",
-    "@wix/stores": "^1.0.697",
     "@wix/wix-data-items-sdk": "^1.0.519",
     "astro": "6.4.2",
     "tailwindcss": "^4.3.0",

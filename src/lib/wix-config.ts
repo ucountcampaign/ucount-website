@@ -8,16 +8,11 @@
  * staging deployment can point at a different Wix site without a code change.
  *
  * Privileged API keys (WIX_DATA_API_KEY, WIX_EVENTS_API_KEY,
- * WIX_STORES_API_KEY, WIX_FORMS_API_KEY) are secrets and must never appear
+ * WIX_FORMS_API_KEY, SQUARE_ACCESS_TOKEN) are secrets and must never appear
  * here — they stay in `.env` locally and in Worker secrets when deployed.
  */
 export const WIX_CONFIG_DEFAULTS: Record<string, string> = {
   WIX_SITE_ID: "a73b0895-820a-424a-8f69-053753fa007c",
-
-  // Wix still emits checkout URLs on the primary site domain. After that domain
-  // moved to Astro, rewrite them onto the Wix-connected checkout subdomain so
-  // /checkout is not handled by the Worker.
-  WIX_CHECKOUT_BASE_URL: "https://checkout.ucountcampaign.org",
 
   // The modern Wix Forms "Astro Contact Form" schema. The field targets are
   // immutable once the form exists, so a mismatch here silently submits to

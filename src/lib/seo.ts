@@ -1,6 +1,6 @@
 import type { EventItem } from "./wix-events";
 import type { PageContent, ResolvedSiteSettings } from "./wix-cms";
-import type { StoreProductCard, StoreProductDetail } from "./wix-store";
+import type { StoreProductCard, StoreProductDetail } from "./square-store";
 import { resolveWixImageUrl } from "./images";
 
 function normalizeSiteUrl(value: string | undefined): string {
