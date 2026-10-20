@@ -1,0 +1,34 @@
+---
+import type { RichTextBlock } from "../lib/wix-events";
+
+// Renders Wix rich-text blocks (see richTextBlocks in lib/wix-events.ts) as
+// paragraphs and lists with their links and inline formatting. List items
+// render through this component again, so nested lists work. Text is escaped
+// by Astro, so no raw HTML from Wix reaches the page.
+type Props = {
+  blocks: RichTextBlock[];
+  class?: string;
+};
+
+const { blocks, class: className = "space-y-5" } = Astro.props;
+const linkClass =
+  "font-medium text-ember-600 underline underline-offset-4 transition-colors hover:text-ember-700";
+---
+
+<div class={className}>
+  {blocks.map((block) => {
+    if (block.type === "paragraph") {
+      // whitespace-pre-line keeps line breaks typed inside a Wix paragraph.
+      // Spans stay on one line so the template adds no whitespace between them.
+      return <p class="whitespace-pre-line">{block.spans.map((span) => span.href ? <a href={span.href} class:list={[linkClass, { "font-semibold": span.bold, italic: span.italic }]} target={span.newTab ? "_blank" : undefined} rel={span.newTab ? "noopener noreferrer" : undefined}>{span.text}</a> : <span class:list={{ "font-semibold": span.bold, italic: span.italic, underline: span.underline }}>{span.text}</span>)}</p>;
+    }
+
+    const List = block.ordered ? "ol" : "ul";
+
+    return (
+      <List class:list={["space-y-2 pl-6", block.ordered ? "list-decimal" : "list-disc"]}>
+        {block.items.map((item) => <li><Astro.self blocks={item} class="space-y-2" /></li>)}
+      </List>
+    );
+  })}
+</div>
