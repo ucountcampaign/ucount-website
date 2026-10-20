@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import RichText from "../../components/RichText.astro";
 import SocialLinks from "../../components/SocialLinks.astro";
 import { cmsText, getPageSection, getSiteSettings, resolveSiteSettings } from "../../lib/wix-cms";
 import { getEventBySlug, getEvents } from "../../lib/wix-events";
@@ -196,9 +197,13 @@ const eventFocus = (
         <h2 class="font-display text-3xl font-bold text-neutral-900 lg:text-5xl">
           {event.title}
         </h2>
-        <p class="mt-6 text-lg leading-relaxed text-neutral-600">
-          {event.description || event.summary}
-        </p>
+        {event.descriptionBlocks.length > 0 ? (
+          <RichText blocks={event.descriptionBlocks} class="mt-6 space-y-5 text-lg leading-relaxed text-neutral-600" />
+        ) : (
+          <p class="mt-6 text-lg leading-relaxed text-neutral-600">
+            {event.description || event.summary}
+          </p>
+        )}
 
         {shouldShowDetailImage && (
           <div class={detailImageFrameClass}>

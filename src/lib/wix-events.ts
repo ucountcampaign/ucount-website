@@ -13,7 +13,10 @@ export type EventItem = {
   title: string;
   eyebrow: string;
   summary: string;
+  // Plain text for metadata and structured data.
   description: string;
+  // Formatted description for the page body. Empty when Wix has no rich text.
+  descriptionBlocks: RichTextBlock[];
   startDateTime: string;
   endDateTime: string;
   dateLabel: string;
@@ -271,6 +274,101 @@ function textFromUnknown(value: unknown): string {
   }
 
   return "";
+}
+
+// One run of description text with the formatting Wix applied to it.
+export type RichTextSpan = {
+  text: string;
+  href?: string;
+  newTab?: boolean;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+};
+
+// A description block, rendered by components/RichText.astro. Each list item
+// holds its own blocks, so nested lists and multi-paragraph items keep their
+// structure. Images are not blocks here: the detail page shows the description
+// image separately.
+export type RichTextBlock =
+  | { type: "paragraph"; spans: RichTextSpan[] }
+  | { type: "list"; ordered: boolean; items: RichTextBlock[][] };
+
+// The subset of a Wix rich-content (Ricos) node that we read.
+type RicosNode = {
+  type?: string;
+  nodes?: RicosNode[];
+  textData?: {
+    text?: string;
+    decorations?: {
+      type?: string;
+      linkData?: { link?: { url?: string; target?: string } };
+    }[];
+  };
+};
+
+// Allow only link schemes that cannot run script.
+function safeHref(url: string | undefined): string | undefined {
+  const href = url?.trim();
+
+  return href && /^(https?:|mailto:|tel:)/i.test(href) ? href : undefined;
+}
+
+const childNodes = (node: RicosNode): RicosNode[] =>
+  Array.isArray(node.nodes) ? node.nodes : [];
+
+function richTextSpan(node: RicosNode): RichTextSpan {
+  const decorations = node.textData?.decorations ?? [];
+  const has = (type: string) => decorations.some((decoration) => decoration.type === type);
+  const link = decorations.find((decoration) => decoration.type === "LINK")?.linkData?.link;
+  const href = safeHref(link?.url);
+
+  return {
+    text: node.textData?.text ?? "",
+    href,
+    newTab: Boolean(href) && link?.target === "BLANK",
+    bold: has("BOLD"),
+    italic: has("ITALIC"),
+    underline: has("UNDERLINE"),
+  };
+}
+
+// Walks Ricos nodes into paragraphs and lists. A node with TEXT children
+// (paragraph, heading, code block) becomes a paragraph. Lists keep their items.
+// Any other container (blockquote, list item) contributes its child blocks.
+// Empty paragraphs (Wix's way of adding space) and images produce nothing.
+function richTextBlocks(nodes: RicosNode[]): RichTextBlock[] {
+  return nodes.flatMap((node): RichTextBlock[] => {
+    const children = childNodes(node);
+
+    if (node.type === "BULLETED_LIST" || node.type === "ORDERED_LIST") {
+      const items = children
+        .map((item) => richTextBlocks(childNodes(item)))
+        .filter((blocks) => blocks.length > 0);
+
+      return items.length > 0
+        ? [{ type: "list", ordered: node.type === "ORDERED_LIST", items }]
+        : [];
+    }
+
+    if (children.some((child) => child.type === "TEXT")) {
+      const spans = children
+        .filter((child) => child.type === "TEXT")
+        .map(richTextSpan)
+        .filter((span) => span.text);
+
+      return spans.some((span) => span.text.trim()) ? [{ type: "paragraph", spans }] : [];
+    }
+
+    return richTextBlocks(children);
+  });
+}
+
+// Formatted blocks for the Wix Events `description` rich content.
+function descriptionBlocks(value: unknown): RichTextBlock[] {
+  const nodes = (value as RicosNode | null)?.nodes;
+
+  return Array.isArray(nodes) ? richTextBlocks(nodes) : [];
 }
 
 type WixEventImageSource = {
@@ -649,6 +747,7 @@ function normalizeEvent(event: WixEvent): EventItem | null {
     eyebrow: eventEyebrow(event),
     summary,
     description,
+    descriptionBlocks: descriptionBlocks(event.description),
     startDateTime: event.dateAndTimeSettings?.startDate ?? "",
     endDateTime:
       event.dateAndTimeSettings?.endDate ??
