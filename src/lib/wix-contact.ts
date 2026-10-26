@@ -86,10 +86,12 @@ export async function submitWixContactForm(submission: ContactSubmission) {
   const { apiKey, formId, siteId } = getContactConfig();
   const fields = contactFieldMap();
 
+  // Wix may accept a write before its response times out, so do not retry.
   const response = await fetch(
     "https://www.wixapis.com/form-submission-service/v4/submissions",
     {
       method: "POST",
+      signal: AbortSignal.timeout(20_000),
       headers: {
         Authorization: apiKey,
         "Content-Type": "application/json",

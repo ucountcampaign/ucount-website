@@ -12,7 +12,12 @@ function getString(formData: FormData, key: string): string {
 }
 
 export const POST: APIRoute = async ({ request, redirect }) => {
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return new Response(null, { status: 400 });
+  }
   const honeypot = getString(formData, "company");
 
   if (honeypot) {

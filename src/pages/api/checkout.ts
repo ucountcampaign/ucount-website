@@ -67,7 +67,12 @@ function parseCartItems(raw: string): CheckoutLineItemInput[] {
 }
 
 export const POST: APIRoute = async ({ request, redirect }) => {
-  const formData = await request.formData();
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return new Response(null, { status: 400 });
+  }
   const cartPayload = getString(formData, "cart");
   const productSlug = getString(formData, "productSlug");
   const fallbackPath = cartPayload

@@ -16,7 +16,7 @@ type CatalogResult = {
 };
 type TimedResult = { elapsed: number; value: string };
 
-test("Cloudflare retains late Wix refreshes and preserves source availability", { timeout: 45000 }, async (t) => {
+test("Cloudflare retains late Wix refreshes and rejects malformed form posts before Wix calls", { timeout: 45000 }, async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "ucount-cache-test-"));
   const config = join(directory, "wrangler.json");
   await writeFile(config, JSON.stringify({
@@ -25,7 +25,7 @@ test("Cloudflare retains late Wix refreshes and preserves source availability", 
     compatibility_date: "2026-04-15",
     define: { "import.meta.env": "{}" },
     alias: { "astro:middleware": fileURLToPath(new URL("../node_modules/astro/dist/core/middleware/index.js", import.meta.url)) },
-    vars: { WIX_DATA_API_KEY: "local-fixture-key", WIX_STORES_API_KEY: "local-fixture-key", WIX_EVENTS_API_KEY: "local-fixture-key" },
+    vars: { WIX_DATA_API_KEY: "local-fixture-key", WIX_STORES_API_KEY: "local-fixture-key", WIX_EVENTS_API_KEY: "local-fixture-key", WIX_FORMS_API_KEY: "local-fixture-key" },
   }));
   const child = spawn(process.execPath, [
     fileURLToPath(new URL("../node_modules/wrangler/bin/wrangler.js", import.meta.url)),
@@ -75,6 +75,22 @@ test("Cloudflare retains late Wix refreshes and preserves source availability", 
   assert.equal(catalog.home.products[0].slug, "fixture-product");
   assert.equal(catalog.shop.products[0].slug, "fixture-product");
   assert.equal(catalog.calls["/stores-reader/v1/products/query-platformized"], 2);
+  const calls = await get<Record<string, number>>("/stats");
+  for (const path of ["/api/contact", "/api/checkout"]) {
+    const invalid: Response = await fetch(origin + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    assert.equal(invalid.status, 400);
+  }
+  assert.deepEqual(await get("/stats"), calls);
+  const submit = (path: string, values: Record<string, string>) => fetch(origin + path, {
+    method: "POST", body: new URLSearchParams(values), redirect: "manual",
+  });
+  const sent = await submit("/api/contact", { firstName: "Fixture", email: "fixture@example.test", message: "Local test" });
+  assert.equal(sent.status, 303);
+  assert.equal(sent.headers.get("location"), "/contact?status=sent");
+  const cart = await submit("/api/checkout", { productId: "fixture-product", productSlug: "fixture-product", quantity: "1" });
+  assert.equal(cart.status, 303);
+  assert.equal(cart.headers.get("location"), "https://checkout.ucountcampaign.org/checkout?checkoutId=fixture");
+
   await get("/configure?delay=5000&title=Updated%20CMS%20title&advance=61000");
   const stale = await get<CmsResult>("/cms");
   assert.ok(stale.elapsed >= 3900 && stale.elapsed < 4800, JSON.stringify(stale));

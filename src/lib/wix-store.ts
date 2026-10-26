@@ -829,7 +829,9 @@ function wixApiHeaders() {
 }
 
 async function wixApiRequest<T>(path: string, body?: unknown): Promise<T> {
+  // Wix may accept a write before its response times out, so do not retry.
   const response = await fetch(`https://www.wixapis.com${path}`, {
+    signal: AbortSignal.timeout(20_000),
     method: body ? "POST" : "GET",
     headers: wixApiHeaders(),
     body: body ? JSON.stringify(body) : undefined,
