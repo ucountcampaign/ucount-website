@@ -9,6 +9,7 @@ import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
 import { getSiteUrl, stripTags, truncateDescription } from "../lib/seo";
 import { publicCacheControl } from "../lib/cache";
+import { wixUnavailableResponse } from "../lib/wix-read-cache";
 
 function lineItems<T>(items: T[], render: (item: T) => string): string {
   return items.length ? items.map(render).join("\n") : "- None currently listed.";
@@ -16,14 +17,15 @@ function lineItems<T>(items: T[], render: (item: T) => string): string {
 
 export const GET: APIRoute = async ({ url }) => {
   const siteUrl = getSiteUrl(url.origin);
-  const [siteSettings, initiatives, partners, events, storefront] =
-    await Promise.all([
-      getSiteSettings(),
-      getInitiatives("home"),
-      getPartners(),
+  const data = await Promise.all([
+      getSiteSettings({ strict: true }),
+      getInitiatives("home", { strict: true }),
+      getPartners({ strict: true }),
       getEvents(),
-      getStorefrontProducts(),
-    ]);
+      getStorefrontProducts({ strict: true }),
+    ]).catch(() => null);
+  if (!data || data[3].source === "unavailable") return wixUnavailableResponse();
+  const [siteSettings, initiatives, partners, events, storefront] = data;
   const site = resolveSiteSettings(siteSettings);
   const upcomingEvents = events.upcomingEvents.slice(0, 12);
   const products = storefront.products.slice(0, 24);

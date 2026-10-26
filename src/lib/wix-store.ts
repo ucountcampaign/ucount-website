@@ -3,6 +3,7 @@ import { collections, products } from "@wix/stores";
 import { siteCacheTtlMs } from "./cache";
 import { createWixImageSrcSet, resizeWixImageUrl } from "./images";
 import { getEnv } from "./runtime-env";
+import { createWixReadCache, wixReadFetch, type WixReadOptions } from "./wix-read-cache";
 
 const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
@@ -186,12 +187,9 @@ export type StoreProductDetail = StoreProductCard & {
 
 const defaultAllProductsUrl = "/shop";
 
-type StoreCacheEntry<T> = {
-  expiresAt: number;
-  value: Promise<T>;
-};
-
-const storeCache = new Map<string, StoreCacheEntry<unknown>>();
+const getCachedStoreValue = createWixReadCache();
+// Checkout uses product details to check stock. Never extend their 60-second TTL.
+const getCachedProductValue = createWixReadCache(siteCacheTtlMs);
 
 const htmlEntities: Record<string, string> = {
   amp: "&",
@@ -210,59 +208,26 @@ const htmlEntities: Record<string, string> = {
   rsquo: "'",
 };
 
-function getCachedStoreValue<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const now = Date.now();
-  const cachedValue = storeCache.get(key) as StoreCacheEntry<T> | undefined;
-
-  if (cachedValue && cachedValue.expiresAt > now) {
-    return cachedValue.value;
-  }
-
-  const value = load().catch((error) => {
-    if (storeCache.get(key)?.value === value) {
-      storeCache.delete(key);
-    }
-
-    throw error;
-  });
-
-  storeCache.set(key, {
-    expiresAt: now + siteCacheTtlMs,
-    value,
-  });
-
-  return value;
-}
-
-function createWixStoreClient() {
+function getWixStoreClient(signal: AbortSignal) {
   const apiKey = getEnv("WIX_STORES_API_KEY");
   const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
+    if (!missingStoreCredentialsWarningShown) {
+      missingStoreCredentialsWarningShown = true;
+      console.warn("WIX_STORES_API_KEY or WIX_SITE_ID is not set; store products will be unavailable.");
+    }
     return null;
   }
 
   return createClient({
     modules: { collections, products },
     auth: ApiKeyStrategy({ apiKey, siteId }),
+    fetch: wixReadFetch(signal),
   });
 }
 
-let wixStoreClient: ReturnType<typeof createWixStoreClient> | undefined;
 let missingStoreCredentialsWarningShown = false;
-
-function getWixStoreClient() {
-  wixStoreClient ??= createWixStoreClient();
-
-  if (!wixStoreClient && !missingStoreCredentialsWarningShown) {
-    missingStoreCredentialsWarningShown = true;
-    console.warn(
-      "WIX_STORES_API_KEY or WIX_SITE_ID is not set; store products will be unavailable.",
-    );
-  }
-
-  return wixStoreClient;
-}
 
 function decodeHtmlEntity(entity: string): string {
   if (entity.startsWith("#x")) {
@@ -734,36 +699,33 @@ function mapProductDetail(
   };
 }
 
-async function queryAllProducts(client: NonNullable<ReturnType<typeof getWixStoreClient>>) {
-  const allProducts: WixStoreProduct[] = [];
-  let result = await client.products.queryProducts().limit(100).find();
+type WixPage<T> = { items: T[]; totalCount?: number; hasNext(): boolean; next(): Promise<WixPage<T>> };
 
+async function collectWixPages<T>(result: WixPage<T>): Promise<T[]> {
+  const rows: T[] = [];
   while (true) {
-    allProducts.push(...(result.items as WixStoreProduct[]));
-
-    if (!result.hasNext()) {
+    rows.push(...result.items);
+    const hasNext = result.hasNext();
+    if ((!result.items.length && hasNext) || (!hasNext && typeof result.totalCount === "number" && rows.length < result.totalCount)) {
+      throw new Error("Wix query returned incomplete results");
+    }
+    if (!hasNext) {
       break;
     }
-
     result = await result.next();
   }
+  return rows;
+}
 
-  return allProducts;
+async function queryAllProducts(client: NonNullable<ReturnType<typeof getWixStoreClient>>) {
+  return await collectWixPages(await client.products.queryProducts().limit(100).find()) as WixStoreProduct[];
 }
 
 async function queryStoreCollections(
   client: NonNullable<ReturnType<typeof getWixStoreClient>>,
 ): Promise<StoreCollection[]> {
-  try {
-    const result = await client.collections.queryCollections().limit(100).find();
-
-    return result.items
-      .map(mapCollection)
-      .filter((collection): collection is StoreCollection => Boolean(collection));
-  } catch (error) {
-    console.error("Failed to load Wix store collections", error);
-    return [];
-  }
+  const rows = await collectWixPages(await client.collections.queryCollections().limit(100).find());
+  return rows.map(mapCollection).filter((collection): collection is StoreCollection => Boolean(collection));
 }
 
 function collectionMap(collections: StoreCollection[]) {
@@ -773,79 +735,66 @@ function collectionMap(collections: StoreCollection[]) {
 export async function getFeaturedStoreProducts(
   limit = 6,
 ): Promise<StorefrontProducts> {
-  const client = getWixStoreClient();
-
-  if (!client) {
-    return { products: [], allProductsUrl: defaultAllProductsUrl };
-  }
-
   try {
-    return await getCachedStoreValue(`featured-products:${limit}`, async () => {
-      const [sourceProducts, storeCollections] = await Promise.all([
-        queryAllProducts(client),
-        queryStoreCollections(client),
-      ]);
-      const collectionsById = collectionMap(storeCollections);
-      const productCards = sourceProducts
-        .map((product) => mapProductCard(product, collectionsById))
-        .filter((product): product is StoreProductCard => Boolean(product))
-        .sort(featuredProductSort);
+    const { featuredProducts, storeCollections } = await getStoreCatalog();
 
-      return {
-        products: productCards.slice(0, limit),
-        allProductsUrl: getAllProductsUrl(),
-        collections: storeCollections,
-      };
-    });
+    return {
+      products: featuredProducts.slice(0, limit),
+      allProductsUrl: getAllProductsUrl(),
+      collections: storeCollections,
+    };
   } catch (error) {
     console.error("Failed to load Wix store products", error);
     return { products: [], allProductsUrl: defaultAllProductsUrl };
   }
 }
 
-export async function getStorefrontProducts(): Promise<StorefrontProducts> {
-  const client = getWixStoreClient();
-
-  if (!client) {
-    return { products: [], allProductsUrl: defaultAllProductsUrl, collections: [] };
-  }
-
+export async function getStorefrontProducts(options?: WixReadOptions): Promise<StorefrontProducts> {
   try {
-    return await getCachedStoreValue("storefront-products", async () => {
-      const [sourceProducts, storeCollections] = await Promise.all([
-        queryAllProducts(client),
-        queryStoreCollections(client),
-      ]);
-      const collectionsById = collectionMap(storeCollections);
+    const { products, storeCollections } = await getStoreCatalog();
 
-      return {
-        products: sourceProducts
-          .map((product) => mapProductCard(product, collectionsById, true))
-          .filter((product): product is StoreProductCard => Boolean(product))
-          .sort(featuredProductSort),
-        allProductsUrl: getAllProductsUrl(),
-        collections: storeCollections.filter(
-          (collection) => collection.name !== "All Products",
-        ),
-      };
-    });
+    return {
+      products,
+      allProductsUrl: getAllProductsUrl(),
+      collections: storeCollections.filter(
+        (collection) => collection.name !== "All Products",
+      ),
+    };
   } catch (error) {
     console.error("Failed to load Wix storefront products", error);
+    if (options?.strict) throw error;
     return { products: [], allProductsUrl: defaultAllProductsUrl, collections: [] };
   }
+}
+
+function getStoreCatalog() {
+  // Share the catalogue read between the homepage and the marketplace.
+  return getCachedStoreValue("store:catalog", async (signal) => {
+    const client = getWixStoreClient(signal);
+    if (!client) throw new Error("Wix store is not configured");
+    const [sourceProducts, storeCollections] = await Promise.all([
+      queryAllProducts(client),
+      queryStoreCollections(client),
+    ]);
+    const collectionsById = collectionMap(storeCollections);
+    const cards = sourceProducts
+      .map((product) => mapProductCard(product, collectionsById, true))
+      .filter((product): product is StoreProductCard => Boolean(product));
+    return {
+      products: cards.toSorted(featuredProductSort),
+      featuredProducts: cards.filter((product) => product.inStock).sort(featuredProductSort),
+      storeCollections,
+    };
+  });
 }
 
 export async function getStoreProductBySlug(
   slug: string,
 ): Promise<StoreProductDetail | null> {
-  const client = getWixStoreClient();
-
-  if (!client) {
-    return null;
-  }
-
   try {
-    return await getCachedStoreValue(`store-product:${slug}`, async () => {
+    return await getCachedProductValue(`store-product:${slug}`, async (signal) => {
+      const client = getWixStoreClient(signal);
+      if (!client) throw new Error("Wix store is not configured");
       const [productResult, storeCollections] = await Promise.all([
         client.products.queryProducts().eq("slug", slug).limit(1).find(),
         queryStoreCollections(client),
@@ -860,7 +809,7 @@ export async function getStoreProductBySlug(
     });
   } catch (error) {
     console.error(`Failed to load Wix store product ${slug}`, error);
-    return null;
+    throw error;
   }
 }
 

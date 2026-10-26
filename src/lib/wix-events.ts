@@ -1,6 +1,6 @@
 import { resizeWixImageUrl } from "./images";
-import { siteCacheTtlMs } from "./cache";
 import { getEnv } from "./runtime-env";
+import { createWixReadCache } from "./wix-read-cache";
 
 export type EventLifecycle = "upcoming" | "past";
 
@@ -117,37 +117,8 @@ const marketplaceBoutiqueImageId = "dc65de_cbfbc80860444ed4bd8c9cec3ab039ef~mv2.
 const marketplaceBoutiqueImage = "/assets/events/ucount-marketplace-boutique-borderless.webp";
 const eventPlaceholderImage = "/assets/events/ucount-event-placeholder.webp";
 
-type EventCacheEntry<T> = {
-  expiresAt: number;
-  value: Promise<T>;
-};
-
-const eventCache = new Map<string, EventCacheEntry<unknown>>();
+const getCachedEventValue = createWixReadCache();
 let missingEventsCredentialsWarningShown = false;
-
-function getCachedEventValue<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const now = Date.now();
-  const cachedValue = eventCache.get(key) as EventCacheEntry<T> | undefined;
-
-  if (cachedValue && cachedValue.expiresAt > now) {
-    return cachedValue.value;
-  }
-
-  const value = load().catch((error) => {
-    if (eventCache.get(key)?.value === value) {
-      eventCache.delete(key);
-    }
-
-    throw error;
-  });
-
-  eventCache.set(key, {
-    expiresAt: now + siteCacheTtlMs,
-    value,
-  });
-
-  return value;
-}
 
 function getEventsApiConfig() {
   const apiKey = getEnv("WIX_EVENTS_API_KEY") || getEnv("WIX_DATA_API_KEY");
@@ -167,11 +138,11 @@ function getEventsApiConfig() {
   return { apiKey, siteId };
 }
 
-async function wixEventsRequest(body: unknown): Promise<WixEvent[]> {
+async function wixEventsRequest(body: unknown, signal: AbortSignal): Promise<WixEvent[]> {
   const config = getEventsApiConfig();
 
   if (!config) {
-    return [];
+    throw new Error("Wix Events is not configured");
   }
 
   const response = await fetch("https://www.wixapis.com/events/v3/events/query", {
@@ -182,6 +153,7 @@ async function wixEventsRequest(body: unknown): Promise<WixEvent[]> {
       "wix-site-id": config.siteId,
     },
     body: JSON.stringify(body),
+    signal,
   });
   const text = await response.text();
   const data = text ? (JSON.parse(text) as WixEventsResponse) : {};
@@ -194,6 +166,9 @@ async function wixEventsRequest(body: unknown): Promise<WixEvent[]> {
     );
   }
 
+  if (data.events !== undefined && !Array.isArray(data.events)) {
+    throw new Error("Wix returned an invalid events list");
+  }
   return data.events ?? [];
 }
 
@@ -710,7 +685,8 @@ function registrationLabel(event: WixEvent): string {
   return "Register";
 }
 
-function normalizeEvent(event: WixEvent): EventItem | null {
+function normalizeEvent(event: WixEvent | undefined): EventItem | null {
+  if (!event) return null;
   const id = event.id?.trim();
   const slug = event.slug?.trim();
   const title = event.title?.trim();
@@ -787,7 +763,7 @@ function eventSortDescending(left: EventItem, right: EventItem): number {
   return eventSortAscending(right, left);
 }
 
-async function queryUpcomingEvents(): Promise<WixEvent[]> {
+async function queryUpcomingEvents(signal: AbortSignal): Promise<WixEvent[]> {
   return wixEventsRequest({
     fields: ["DETAILS", "URLS", "TEXTS", "REGISTRATION"],
     query: {
@@ -795,10 +771,10 @@ async function queryUpcomingEvents(): Promise<WixEvent[]> {
       sort: [{ fieldName: "dateAndTimeSettings.startDate", order: "ASC" }],
       paging: { limit: 50, offset: 0 },
     },
-  });
+  }, signal);
 }
 
-async function queryPastEvents(): Promise<WixEvent[]> {
+async function queryPastEvents(signal: AbortSignal): Promise<WixEvent[]> {
   return wixEventsRequest({
     fields: ["DETAILS", "URLS", "TEXTS", "REGISTRATION"],
     query: {
@@ -806,15 +782,15 @@ async function queryPastEvents(): Promise<WixEvent[]> {
       sort: [{ fieldName: "dateAndTimeSettings.startDate", order: "DESC" }],
       paging: { limit: 50, offset: 0 },
     },
-  });
+  }, signal);
 }
 
 export async function getEvents(): Promise<EventsResult> {
   try {
-    return await getCachedEventValue("events:index", async () => {
+    return await getCachedEventValue("events:index", async (signal) => {
       const [upcomingRows, pastRows] = await Promise.all([
-        queryUpcomingEvents(),
-        queryPastEvents(),
+        queryUpcomingEvents(signal),
+        queryPastEvents(signal),
       ]);
       const upcomingEvents = upcomingRows
         .map(normalizeEvent)
@@ -854,19 +830,19 @@ export async function getEventBySlug(
   }
 
   try {
-    return await getCachedEventValue(`events:slug:${cleanSlug}`, async () => {
+    return await getCachedEventValue(`events:slug:${cleanSlug}`, async (signal) => {
       const rows = await wixEventsRequest({
         fields: ["DETAILS", "URLS", "TEXTS", "REGISTRATION"],
         query: {
           filter: { slug: { $eq: cleanSlug } },
           paging: { limit: 1, offset: 0 },
         },
-      });
+      }, signal);
 
       return normalizeEvent(rows[0]) ?? null;
     });
   } catch (error) {
     console.error(`Failed to load Wix Event ${cleanSlug}`, error);
-    return null;
+    throw error;
   }
 }

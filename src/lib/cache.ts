@@ -2,6 +2,9 @@ export const siteCache = {
   ttlSeconds: 60,
   staleWhileRevalidateSeconds: 60 * 60,
   errorTtlSeconds: 30,
+  readWaitSeconds: 4,
+  refreshTimeoutSeconds: 20,
+  maxEntries: 256,
 } as const;
 
 export const siteCacheTtlMs = siteCache.ttlSeconds * 1000;

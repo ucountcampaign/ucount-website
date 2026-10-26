@@ -11,12 +11,17 @@ import {
   truncateDescription,
 } from "../../lib/seo";
 import { setPublicCacheControl } from "../../lib/cache";
+import { wixUnavailableResponse } from "../../lib/wix-read-cache";
 
 const slug = Astro.params.slug ?? "";
-const [siteSettings, product] = await Promise.all([
+const [settingsResult, productResult] = await Promise.allSettled([
   getSiteSettings(),
   getStoreProductBySlug(slug),
 ]);
+
+if (productResult.status === "rejected") return wixUnavailableResponse();
+const siteSettings = settingsResult.status === "fulfilled" ? settingsResult.value : null;
+const product = productResult.value;
 
 const site = resolveSiteSettings(siteSettings);
 const siteUrl = getSiteUrl(Astro.url.origin);

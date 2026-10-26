@@ -1,12 +1,8 @@
 import { ApiKeyStrategy, createClient } from "@wix/sdk";
 import * as items from "@wix/wix-data-items-sdk";
-import {
-  siteCacheErrorTtlMs,
-  siteCacheStaleTtlMs,
-  siteCacheTtlMs,
-} from "./cache";
 import { resolveWixImageUrl } from "./images";
 import { getEnv } from "./runtime-env";
+import { createWixReadCache, wixReadFetch, type WixReadOptions } from "./wix-read-cache";
 
 type CmsRecord = Record<string, unknown>;
 
@@ -173,14 +169,7 @@ type WixQuery = {
   find: (options: { consistentRead: boolean }) => Promise<{ items: unknown[] }>;
 };
 
-type CmsCacheEntry<T> = {
-  expiresAt: number;
-  staleUntil: number;
-  value: Promise<T>;
-  resolvedValue?: T;
-};
-
-const cmsCache = new Map<string, CmsCacheEntry<unknown>>();
+const getCachedCmsValue = createWixReadCache();
 
 function getCollectionAliases(): Record<string, string> {
   const rawAliases = getEnv("WIX_CMS_COLLECTION_ALIASES");
@@ -210,119 +199,50 @@ function resolveCollectionId(collectionId: string): string {
   return collectionAliases[collectionId] ?? collectionId;
 }
 
-function createWixDataClient() {
+function getWixDataClient(signal: AbortSignal) {
   const apiKey = getEnv("WIX_DATA_API_KEY");
   const siteId = getEnv("WIX_SITE_ID");
 
   if (!apiKey || !siteId) {
+    if (!missingDataCredentialsWarningShown) {
+      missingDataCredentialsWarningShown = true;
+      console.warn("WIX_DATA_API_KEY or WIX_SITE_ID is not set; CMS content will use local fallbacks.");
+    }
     return null;
   }
 
   return createClient({
     modules: { items },
     auth: ApiKeyStrategy({ apiKey, siteId }),
+    fetch: wixReadFetch(signal),
   });
 }
 
-let wixDataClient: ReturnType<typeof createWixDataClient> | undefined;
 let missingDataCredentialsWarningShown = false;
-
-function getWixDataClient() {
-  wixDataClient ??= createWixDataClient();
-
-  if (!wixDataClient && !missingDataCredentialsWarningShown) {
-    missingDataCredentialsWarningShown = true;
-    console.warn(
-      "WIX_DATA_API_KEY or WIX_SITE_ID is not set; CMS content will use local fallbacks.",
-    );
-  }
-
-  return wixDataClient;
-}
 
 async function queryCollection<T extends CmsRecord>(
   collectionId: string,
   cacheKey: string,
   buildQuery?: (query: WixQuery) => WixQuery,
+  options?: WixReadOptions,
 ): Promise<T[]> {
-  const client = getWixDataClient();
-
-  if (!client) {
-    return [];
-  }
-
   const resolvedCollectionId = resolveCollectionId(collectionId);
 
   return getCachedCmsValue(
     `${resolvedCollectionId}:${cacheKey}`,
-    async () => {
+    async (signal) => {
+      const client = getWixDataClient(signal);
+      if (!client) throw new Error("Wix CMS is not configured");
       const baseQuery = client.items.query(resolvedCollectionId);
       const query = buildQuery ? buildQuery(baseQuery) : baseQuery;
       const result = await query.find({ consistentRead: true });
 
       return result.items as T[];
     },
-    (error) => {
-      console.error(`Failed to load CMS collection ${collectionId}`, error);
-    },
-  );
-}
-
-function getCachedCmsValue<T>(
-  key: string,
-  load: () => Promise<T>,
-  onError: (error: unknown) => void,
-): Promise<T> {
-  const now = Date.now();
-  const cachedValue = cmsCache.get(key) as CmsCacheEntry<T> | undefined;
-
-  if (cachedValue && cachedValue.expiresAt > now) {
-    return cachedValue.value;
-  }
-
-  const previousValue = cachedValue;
-  let nextEntry: CmsCacheEntry<T>;
-  const value = Promise.resolve()
-    .then(load)
-    .then((result) => {
-      nextEntry.resolvedValue = result;
-
-      return result;
-    })
-    .catch((error) => {
-      onError(error);
-
-      const retryAt = Date.now() + siteCacheErrorTtlMs;
-
-      if (
-        previousValue?.resolvedValue !== undefined &&
-        previousValue.staleUntil > Date.now()
-      ) {
-        nextEntry.resolvedValue = previousValue.resolvedValue;
-        nextEntry.value = Promise.resolve(previousValue.resolvedValue);
-        nextEntry.expiresAt = retryAt;
-        nextEntry.staleUntil = previousValue.staleUntil;
-
-        return previousValue.resolvedValue;
-      }
-
-      const fallback = [] as T;
-      nextEntry.resolvedValue = fallback;
-      nextEntry.value = Promise.resolve(fallback);
-      nextEntry.expiresAt = retryAt;
-      nextEntry.staleUntil = retryAt;
-
-      return fallback;
-    });
-
-  nextEntry = {
-    expiresAt: now + siteCacheTtlMs,
-    staleUntil: now + siteCacheStaleTtlMs,
-    value,
-  };
-  cmsCache.set(key, nextEntry);
-
-  return value;
+  ).catch((error: unknown) => {
+    if (options?.strict) throw error;
+    return [];
+  });
 }
 
 function getPageSections(pageKey: string): Promise<(PageContent & CmsRecord)[]> {
@@ -344,8 +264,9 @@ async function querySortedCollection<T extends CmsRecord>(
   collectionId: string,
   cacheKey: string,
   buildQuery: (query: WixQuery) => WixQuery,
+  options?: WixReadOptions,
 ): Promise<T[]> {
-  const rows = await queryCollection<T>(collectionId, cacheKey, buildQuery);
+  const rows = await queryCollection<T>(collectionId, cacheKey, buildQuery, options);
 
   if (rows.length <= 1) {
     return rows;
@@ -363,11 +284,12 @@ export async function getPageSection(
   return sections.find((section) => section.sectionKey === sectionKey) ?? null;
 }
 
-export async function getSiteSettings(): Promise<SiteSettings | null> {
+export async function getSiteSettings(options?: WixReadOptions): Promise<SiteSettings | null> {
   const settings = await queryCollection<SiteSettings & CmsRecord>(
     "SiteSettings",
     "singleton",
     (query) => query.limit(1),
+    options,
   );
 
   return settings[0] ?? null;
@@ -392,19 +314,21 @@ export function getImpactAllocations(
   );
 }
 
-export function getInitiatives(pageKey: string): Promise<Initiative[]> {
+export function getInitiatives(pageKey: string, options?: WixReadOptions): Promise<Initiative[]> {
   return querySortedCollection<Initiative & CmsRecord>(
     "Initiatives",
     `page:${pageKey}`,
     (query) => query.eq("pageKey", pageKey).ascending("sortOrder"),
+    options,
   );
 }
 
-export function getPartners(): Promise<Partner[]> {
+export function getPartners(options?: WixReadOptions): Promise<Partner[]> {
   return querySortedCollection<Partner & CmsRecord>(
     "Partners",
     "active",
     (query) => query.eq("isActive", true).ascending("sortOrder"),
+    options,
   );
 }
 

@@ -3,6 +3,7 @@ import { getEvents } from "../lib/wix-events";
 import { getStorefrontProducts } from "../lib/wix-store";
 import { absoluteUrl, getSiteUrl } from "../lib/seo";
 import { publicCacheControl } from "../lib/cache";
+import { wixUnavailableResponse } from "../lib/wix-read-cache";
 
 type SitemapEntry = {
   loc: string;
@@ -38,10 +39,12 @@ function sitemapEntry(entry: SitemapEntry): string {
 export const GET: APIRoute = async ({ url }) => {
   const siteUrl = getSiteUrl(url.origin);
   const now = new Date().toISOString();
-  const [storefront, events] = await Promise.all([
-    getStorefrontProducts(),
+  const data = await Promise.all([
+    getStorefrontProducts({ strict: true }),
     getEvents(),
-  ]);
+  ]).catch(() => null);
+  if (!data || data[1].source === "unavailable") return wixUnavailableResponse();
+  const [storefront, events] = data;
   const staticEntries: SitemapEntry[] = [
     { loc: `${siteUrl}/`, changefreq: "weekly", priority: 1 },
     { loc: absoluteUrl("/shop", siteUrl), changefreq: "daily", priority: 0.9 },

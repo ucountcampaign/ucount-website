@@ -1,10 +1,9 @@
 /// <reference types="astro/client" />
 
-// Cloudflare's virtual module for runtime bindings and secrets. Only `env` is
-// used (read via getEnv in src/lib/runtime-env.ts), so declare just that
-// instead of committing wrangler's generated runtime types.
+// Declare the Cloudflare APIs used here without committing generated types.
 declare module "cloudflare:workers" {
   export const env: Record<string, unknown>;
+  export function waitUntil(task: Promise<unknown>): void;
 }
 
 interface ImportMetaEnv {

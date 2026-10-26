@@ -65,10 +65,29 @@ Astro is configured with `output: "server"` and the Cloudflare adapter, so the
 marketplace, product pages, checkout API, and contact API render server-side on
 Cloudflare Workers. Cache durations are centralized in `src/lib/cache.ts`. Wix store,
 events, and CMS reads are memoized in the serverless function process for 60
-seconds. Wix CMS reads keep stale successful values for one hour if Wix is
-temporarily unavailable, and short-cache failures for 30 seconds so a Wix
-timeout does not cause every request to retry immediately. Page content sections
-are loaded once per page key and shared by `getPageSection()` calls.
+seconds. A refresh gets up to four seconds to supply current content. After that,
+CMS, catalogue, and event reads use their last successful value for up to one
+hour. On a cold Worker with no saved value, pages use their existing local
+fallbacks. These are process-local caches, so values do not survive Worker
+replacement or move between data centers.
+
+Refreshes continue through Cloudflare `waitUntil()` after the response and save
+successful late results for later requests. A shared 20-second deadline aborts
+all HTTP requests in the refresh, including catalogue pagination. Failures back
+off for 30 seconds without replacing successful data. Each cache holds at most
+256 keys, including URL-supplied product and event slugs. Product detail reads
+used for checkout keep their original 60-second maximum age and fail closed
+when current stock cannot be read. Checkout and contact submissions never run
+as background refreshes.
+
+The homepage and marketplace share one catalogue read. Page content sections
+are loaded once per page key and shared by `getPageSection()` calls. Background
+updates affect later requests, not the HTML already sent to a visitor.
+
+Product lookup failures return an uncached HTTP 503 rather than a false 404.
+The sitemap and full AI reference also return HTTP 503 if a required source is
+unavailable, so a timeout cannot publish an empty catalogue as current data.
+Successful empty event lookups remove deleted events from the cache.
 
 Public cached pages and generated routes send:
 
@@ -83,8 +102,13 @@ the original 2000px catalog images for every card.
 ## Build
 
 ```sh
+pnpm test
+pnpm test:worker
+pnpm exec tsc --noEmit
 pnpm build
 ```
+
+The Worker integration test uses local fixtures and blocks external API calls.
 
 ## Deployment
 
