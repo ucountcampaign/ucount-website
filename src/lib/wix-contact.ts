@@ -90,6 +90,7 @@ export async function submitWixContactForm(submission: ContactSubmission) {
     "https://www.wixapis.com/form-submission-service/v4/submissions",
     {
       method: "POST",
+      signal: AbortSignal.timeout(20_000),
       headers: {
         Authorization: apiKey,
         "Content-Type": "application/json",

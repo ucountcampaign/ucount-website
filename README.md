@@ -78,7 +78,9 @@ off for 30 seconds without replacing successful data. Each cache holds at most
 256 keys, including URL-supplied product and event slugs. Product detail reads
 used for checkout keep their original 60-second maximum age and fail closed
 when current stock cannot be read. Checkout and contact submissions never run
-as background refreshes.
+as background refreshes or retry automatically. Their outbound Wix calls time
+out after 20 seconds. Malformed form submissions return HTTP 400 before Wix is
+called.
 
 The homepage and marketplace share one catalogue read. Page content sections
 are loaded once per page key and shared by `getPageSection()` calls. Background
@@ -88,6 +90,10 @@ Product lookup failures return an uncached HTTP 503 rather than a false 404.
 The sitemap and full AI reference also return HTTP 503 if a required source is
 unavailable, so a timeout cannot publish an empty catalogue as current data.
 Successful empty event lookups remove deleted events from the cache.
+
+Middleware rejects PHP probe paths before page handlers can make Wix requests.
+This site has no PHP runtime. The attack timeline and the limits of the available
+traffic evidence are recorded in [the investigation](docs/php-attack-performance-investigation.md).
 
 Public cached pages and generated routes send:
 
