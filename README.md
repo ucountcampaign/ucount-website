@@ -91,7 +91,7 @@ The sitemap and full AI reference also return HTTP 503 if a required source is
 unavailable, so a timeout cannot publish an empty catalogue as current data.
 Successful empty event lookups remove deleted events from the cache.
 
-Middleware rejects PHP probe paths before page handlers can make Wix requests.
+The Worker entry point rejects malformed paths and PHP probes before Astro routing.
 This site has no PHP runtime. The attack timeline and the limits of the available
 traffic evidence are recorded in [the investigation](docs/php-attack-performance-investigation.md).
 
