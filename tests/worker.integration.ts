@@ -16,7 +16,7 @@ type CatalogResult = {
 };
 type TimedResult = { elapsed: number; value: string };
 
-test("Cloudflare retains late Wix refreshes and rejects PHP probes before Wix reads", { timeout: 45000 }, async (t) => {
+test("Cloudflare retains late Wix refreshes and rejects malformed form posts before Wix calls", { timeout: 45000 }, async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "ucount-cache-test-"));
   const config = join(directory, "wrangler.json");
   await writeFile(config, JSON.stringify({
@@ -76,11 +76,6 @@ test("Cloudflare retains late Wix refreshes and rejects PHP probes before Wix re
   assert.equal(catalog.shop.products[0].slug, "fixture-product");
   assert.equal(catalog.calls["/stores-reader/v1/products/query-platformized"], 2);
   const calls = await get<Record<string, number>>("/stats");
-  for (const [path, status] of [["/product-page/wp-login.php", 404], ["/event-details/index%2ePHP/path", 404], ["/%FF", 400]] as const) {
-    assert.equal((await fetch(origin + path)).status, status);
-  }
-  assert.deepEqual(await get("/stats"), calls);
-
   for (const path of ["/api/contact", "/api/checkout"]) {
     const invalid: Response = await fetch(origin + path, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     assert.equal(invalid.status, 400);

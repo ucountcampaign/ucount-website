@@ -4,7 +4,6 @@ import { getEvents, getEventBySlug } from "../../src/lib/wix-events.ts";
 import { createWixReadCache, wixUnavailableResponse } from "../../src/lib/wix-read-cache.ts";
 import { GET as sitemap } from "../../src/pages/sitemap.xml.ts";
 import { GET as fullFeed } from "../../src/pages/llms-full.txt.ts";
-import { guardRequestPath } from "../../src/lib/request-guard.ts";
 import { POST as contact } from "../../src/pages/api/contact.ts";
 import { POST as checkout } from "../../src/pages/api/checkout.ts";
 const read = createWixReadCache();
@@ -77,6 +76,6 @@ export default {
       const value = await read(key, async () => { await new Promise(resolve => setTimeout(resolve, 5000)); return "late primary source"; }).catch(() => "page fallback");
       return Response.json({value,elapsed: Date.now()-started});
     }
-    return guardRequestPath(url) ?? Response.json({next:true,calls});
+    return Response.json({next:true,calls});
   }
 };

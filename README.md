@@ -91,9 +91,11 @@ The sitemap and full AI reference also return HTTP 503 if a required source is
 unavailable, so a timeout cannot publish an empty catalogue as current data.
 Successful empty event lookups remove deleted events from the cache.
 
-The Worker entry point rejects malformed paths and PHP probes before Astro routing.
-This site has no PHP runtime. The attack timeline and the limits of the available
-traffic evidence are recorded in [the investigation](docs/php-attack-performance-investigation.md).
+The Cloudflare WAF custom rule "Block sensitive-file probes" blocks PHP paths and
+common secret-file probes before they reach the Worker. The rule is managed in
+the Cloudflare dashboard, not in this repository. This site has no PHP runtime.
+The attack timeline and the limits of the available traffic evidence are
+recorded in [the investigation](docs/php-attack-performance-investigation.md).
 
 Public cached pages and generated routes send:
 
