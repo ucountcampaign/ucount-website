@@ -10,7 +10,7 @@ import { test } from "node:test";
 
 type CmsResult = { elapsed: number; settings: { siteName: string }; section: { title: string } };
 type CatalogResult = {
-  home: { products: { slug: string }[] };
+  home: { products: { slug: string }[]; collections: { name: string }[] };
   shop: { products: { slug: string }[] };
   calls: Record<string, number>;
 };
@@ -88,7 +88,20 @@ test("Cloudflare retains late Wix refreshes and preserves source availability", 
   assert.ok(cold.elapsed >= 3900 && cold.elapsed < 4800, JSON.stringify(cold));
   await sleep(1300);
   assert.equal((await get<TimedResult>("/slow?key=cold")).value, "late primary source");
+  await get("/configure?eventDelay=4500");
+  assert.equal((await fetch(origin + "/event?slug=slow-event")).status, 503);
+  await sleep(700);
+  assert.equal((await get<{ id: string }>("/event?slug=slow-event")).id, "fixture-event");
+  await get("/configure");
   assert.equal((await get<{ id: string }>("/event")).id, "fixture-event");
-  await get("/configure?eventDeleted=true&advance=61000");
+  await get("/configure?malformedEvents&advance=61000");
+  assert.equal((await get<{ id: string }>("/event")).id, "fixture-event");
+  await get("/configure?eventDeleted=true&advance=31000");
   assert.equal(await get("/event"), null);
+  for (const failure of ["truncatedProducts", "failedCollections"]) {
+    await get(`/configure?${failure}&advance=61000`);
+    const retained = await get<CatalogResult>("/catalog");
+    assert.equal(retained.home.products[0].slug, "fixture-product");
+    assert.equal(retained.home.collections[0].name, "Fixture category");
+  }
 });

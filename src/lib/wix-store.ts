@@ -699,36 +699,33 @@ function mapProductDetail(
   };
 }
 
-async function queryAllProducts(client: NonNullable<ReturnType<typeof getWixStoreClient>>) {
-  const allProducts: WixStoreProduct[] = [];
-  let result = await client.products.queryProducts().limit(100).find();
+type WixPage<T> = { items: T[]; totalCount?: number; hasNext(): boolean; next(): Promise<WixPage<T>> };
 
+async function collectWixPages<T>(result: WixPage<T>): Promise<T[]> {
+  const rows: T[] = [];
   while (true) {
-    allProducts.push(...(result.items as WixStoreProduct[]));
-
-    if (!result.hasNext()) {
+    rows.push(...result.items);
+    const hasNext = result.hasNext();
+    if ((!result.items.length && hasNext) || (!hasNext && typeof result.totalCount === "number" && rows.length < result.totalCount)) {
+      throw new Error("Wix query returned incomplete results");
+    }
+    if (!hasNext) {
       break;
     }
-
     result = await result.next();
   }
+  return rows;
+}
 
-  return allProducts;
+async function queryAllProducts(client: NonNullable<ReturnType<typeof getWixStoreClient>>) {
+  return await collectWixPages(await client.products.queryProducts().limit(100).find()) as WixStoreProduct[];
 }
 
 async function queryStoreCollections(
   client: NonNullable<ReturnType<typeof getWixStoreClient>>,
 ): Promise<StoreCollection[]> {
-  try {
-    const result = await client.collections.queryCollections().limit(100).find();
-
-    return result.items
-      .map(mapCollection)
-      .filter((collection): collection is StoreCollection => Boolean(collection));
-  } catch (error) {
-    console.error("Failed to load Wix store collections", error);
-    return [];
-  }
+  const rows = await collectWixPages(await client.collections.queryCollections().limit(100).find());
+  return rows.map(mapCollection).filter((collection): collection is StoreCollection => Boolean(collection));
 }
 
 function collectionMap(collections: StoreCollection[]) {

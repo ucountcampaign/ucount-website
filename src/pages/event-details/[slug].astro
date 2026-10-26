@@ -13,14 +13,17 @@ import {
   truncateDescription,
 } from "../../lib/seo";
 import { setPublicCacheControl } from "../../lib/cache";
+import { wixUnavailableResponse } from "../../lib/wix-read-cache";
 
-const [siteSettings, eventAboutContent, moreEventsContent, event, eventsResult] = await Promise.all([
+const data = await Promise.all([
   getSiteSettings(),
   getPageSection("events", "event-about-intro"),
   getPageSection("events", "more-events-intro"),
   getEventBySlug(Astro.params.slug),
   getEvents(),
-]);
+]).catch(() => null);
+if (!data) return wixUnavailableResponse();
+const [siteSettings, eventAboutContent, moreEventsContent, event, eventsResult] = data;
 
 if (!event) {
   return Astro.redirect("/events");

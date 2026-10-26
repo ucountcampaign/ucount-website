@@ -166,6 +166,9 @@ async function wixEventsRequest(body: unknown, signal: AbortSignal): Promise<Wix
     );
   }
 
+  if (data.events !== undefined && !Array.isArray(data.events)) {
+    throw new Error("Wix returned an invalid events list");
+  }
   return data.events ?? [];
 }
 
@@ -840,6 +843,6 @@ export async function getEventBySlug(
     });
   } catch (error) {
     console.error(`Failed to load Wix Event ${cleanSlug}`, error);
-    return null;
+    throw error;
   }
 }
