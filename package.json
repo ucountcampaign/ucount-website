@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test:worker": "node --experimental-strip-types --test tests/worker.integration.ts",
     "deploy": "wrangler deploy --config dist/server/wrangler.json",
     "deploy:preview": "wrangler versions upload --config dist/server/wrangler.json",
     "deploy:dry-run": "pnpm run build && wrangler deploy --config dist/server/wrangler.json --dry-run",
