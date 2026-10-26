@@ -6,7 +6,7 @@ import {
   resolveSiteSettings,
 } from "../lib/wix-cms";
 import { getEvents } from "../lib/wix-events";
-import { getStorefrontProducts } from "../lib/wix-store";
+import { getStorefrontProducts } from "../lib/square-store";
 import { getSiteUrl, stripTags, truncateDescription } from "../lib/seo";
 import { publicCacheControl } from "../lib/cache";
 

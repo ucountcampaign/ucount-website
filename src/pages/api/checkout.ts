@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import {
   createCheckoutUrlForCart,
   type CheckoutLineItemInput,
-} from "../../lib/wix-store";
+} from "../../lib/square-store";
 
 function getString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -92,7 +92,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     return redirect(checkoutUrl, 303);
   } catch (error) {
-    console.error("Failed to create Wix checkout", error);
+    console.error("Failed to create Square checkout", error);
     return redirect(fallbackPath, 303);
   }
 };

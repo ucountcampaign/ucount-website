@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { getEvents } from "../lib/wix-events";
-import { getStorefrontProducts } from "../lib/wix-store";
+import { getStorefrontProducts } from "../lib/square-store";
 import { absoluteUrl, getSiteUrl } from "../lib/seo";
 import { publicCacheControl } from "../lib/cache";
 
